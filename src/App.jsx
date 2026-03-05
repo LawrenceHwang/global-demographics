@@ -773,8 +773,8 @@ export default function App() {
                                             const y = (150 - val) * 2.5;
                                             return (
                                                 <g key={val}>
-                                                    <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'} strokeWidth="1.5" strokeDasharray="5 4" />
-                                                    <text x="-8" y={y + 7} fontSize="22" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} fontWeight="600" textAnchor="end">{val}</text>
+                                                    <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} strokeWidth="1.5" strokeDasharray="5 4" />
+                                                    <text x="-8" y={y + 7} fontSize="22" fill={theme === 'dark' ? '#94a3b8' : '#475569'} fontWeight="600" textAnchor="end">{val}</text>
                                                 </g>
                                             );
                                         })}
@@ -792,7 +792,7 @@ export default function App() {
                                         <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2="310" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
                                         <circle cx={xPos(currentYear)} cy={(150 - Math.min(150, currentData.depRatio)) * 2.5} r="5" fill="#6366f1" stroke={theme === 'dark' ? '#0f172a' : 'white'} strokeWidth="2.5" />
                                         {[2025, 2050, 2075, 2100].map((yr, i) => (
-                                            <text key={yr} x={xPos(yr)} y="322" fontSize="20" fill={theme === 'dark' ? '#475569' : '#94a3b8'} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
+                                            <text key={yr} x={xPos(yr)} y="322" fontSize="20" fill={theme === 'dark' ? '#94a3b8' : '#475569'} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
                                         ))}
                                     </svg>
                                 </div>
@@ -801,7 +801,7 @@ export default function App() {
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
                                     <h2 className="text-base font-bold">{t('pyrTitle')}</h2>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('pyrSub', { year: currentYear })}</p>
-                                    <svg viewBox="-10 -10 460 315" className="w-full h-auto" aria-label={t('pyrTitle')}>
+                                    <svg viewBox="0 -10 440 315" className="w-full h-auto" aria-label={t('pyrTitle')}>
                                         {(() => {
                                             // Aggregate to 5-year age bands for smooth, readable bars
                                             const ageBands = [];
@@ -812,8 +812,11 @@ export default function App() {
                                             }
                                             ageBands.push({ startAge: 100, total: currentPopArray[100] });
                                             const maxBand = Math.max(...ageBands.map(b => b.total));
-                                            const barH = 13, stride = 14, maxBarW = 185, cx = 225;
+                                            // cx=235: label column 0-50, gap 50-60, bars 60-235 (left), 235-410 (right)
+                                            const barH = 13, stride = 14, maxBarW = 175, cx = 235;
+                                            const LABEL_X = 50; // right-aligned label column, clear of all bars
                                             const getY = (idx) => (20 - idx) * stride;
+                                            const labelColor = theme === 'dark' ? '#94a3b8' : '#475569';
                                             const barFill = (startAge) => startAge < 15
                                                 ? (theme === 'dark' ? '#4ade80' : '#22c55e')
                                                 : startAge < 65
@@ -826,13 +829,14 @@ export default function App() {
                                                         const w = maxBand > 0 ? (total / maxBand) * maxBarW : 0;
                                                         const y = getY(idx);
                                                         const fill = barFill(startAge);
-                                                        const showLabel = startAge % 20 === 0;
+                                                        // Label every 10 years, in dedicated column left of all bars
+                                                        const showLabel = startAge % 10 === 0;
                                                         return (
                                                             <g key={idx}>
                                                                 <rect x={cx - w} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
                                                                 <rect x={cx} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
                                                                 {showLabel && (
-                                                                    <text x={cx - 4} y={y + barH - 2} fontSize="13" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} textAnchor="end">
+                                                                    <text x={LABEL_X} y={y + 9} fontSize="12" fill={labelColor} textAnchor="end" fontWeight="600">
                                                                         {startAge === 100 ? '100+' : startAge}
                                                                     </text>
                                                                 )}
@@ -860,8 +864,8 @@ export default function App() {
                                         const y = 200 - (val / (yAxisMax / 1e6)) * 200;
                                         return (
                                             <g key={val}>
-                                                <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#1e293b' : '#f1f5f9'} strokeWidth="1" />
-                                                <text x="-8" y={y + 4} fontSize="11" fill={theme === 'dark' ? '#475569' : '#94a3b8'} textAnchor="end">{formatYLabel(val)}</text>
+                                                <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#334155' : '#f1f5f9'} strokeWidth="1" />
+                                                <text x="-8" y={y + 4} fontSize="14" fill={theme === 'dark' ? '#94a3b8' : '#475569'} textAnchor="end" fontWeight="600">{formatYLabel(val)}</text>
                                             </g>
                                         );
                                     })}
