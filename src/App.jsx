@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, Globe, Info, Moon, Pause, Play, RotateCcw, Sun, Users } from 'lucide-react';
+import { Activity, AlertTriangle, ChevronDown, ChevronUp, Globe, Info, Moon, Pause, Play, RotateCcw, Settings2, Sun, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 
@@ -152,7 +152,8 @@ const translations = {
         statusEmergency: "Demographic Emergency",
         statusCollapse: "System Collapse (Upside-Down Pyramid)",
         creditPrefix: "Based on concepts from:",
-        videoTitle: "How China blew up its own future (Max Fisher)"
+        videoTitle: "How China blew up its own future (Max Fisher)",
+        controls: "Controls",
     },
     zh: {
         title: "台灣人口統計",
@@ -196,7 +197,8 @@ const translations = {
         statusEmergency: "人口緊急狀態",
         statusCollapse: "系統崩潰 (倒金字塔)",
         creditPrefix: "概念參考自影片：",
-        videoTitle: "How China blew up its own future (Max Fisher)"
+        videoTitle: "How China blew up its own future (Max Fisher)",
+        controls: "參數設定",
     },
     ko: {
         title: "대만 인구 통계",
@@ -240,7 +242,8 @@ const translations = {
         statusEmergency: "인구 비상 사태",
         statusCollapse: "시스템 붕괴 (역피라미드)",
         creditPrefix: "다음 비디오의 개념을 바탕으로 함:",
-        videoTitle: "How China blew up its own future (Max Fisher)"
+        videoTitle: "How China blew up its own future (Max Fisher)",
+        controls: "제어판",
     },
     ja: {
         title: "台湾の人口動態",
@@ -284,7 +287,8 @@ const translations = {
         statusEmergency: "人口緊急事態",
         statusCollapse: "システム崩壊 (逆ピラミッド)",
         creditPrefix: "以下のビデオの概念に基づいています：",
-        videoTitle: "How China blew up its own future (Max Fisher)"
+        videoTitle: "How China blew up its own future (Max Fisher)",
+        controls: "コントロール",
     }
 };
 
@@ -302,6 +306,7 @@ export default function App() {
     const [migration, setMigration] = useState(20000);
     const [currentYear, setCurrentYear] = useState(2025);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [showControls, setShowControls] = useState(false);
 
     // Translation helper function
     const t = (key, params = {}) => {
@@ -335,378 +340,475 @@ export default function App() {
     }, [isPlaying]);
 
     const getDependencyStatus = (ratio) => {
-        if (ratio < 50) return { text: t('statusHealthy'), color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-100 dark:bg-emerald-900/40" };
-        if (ratio < 65) return { text: t('statusWarning'), color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-100 dark:bg-yellow-900/40" };
-        if (ratio < 80) return { text: t('statusSevere'), color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-100 dark:bg-orange-900/40" };
-        if (ratio < 100) return { text: t('statusEmergency'), color: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/40" };
-        return { text: t('statusCollapse'), color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-100 dark:bg-rose-900/40" };
+        if (ratio < 50) return { text: t('statusHealthy'), color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30", border: "border-emerald-200 dark:border-emerald-800" };
+        if (ratio < 65) return { text: t('statusWarning'), color: "text-amber-700 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30", border: "border-amber-200 dark:border-amber-800" };
+        if (ratio < 80) return { text: t('statusSevere'), color: "text-orange-700 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30", border: "border-orange-200 dark:border-orange-800" };
+        if (ratio < 100) return { text: t('statusEmergency'), color: "text-red-700 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/30", border: "border-red-200 dark:border-red-800" };
+        return { text: t('statusCollapse'), color: "text-rose-700 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30", border: "border-rose-200 dark:border-rose-800" };
     };
 
     const status = getDependencyStatus(currentData.depRatio);
 
+    // Chart SVG helpers — chart area is 0-760, leaving room for y-axis labels
+    const CHART_W = 760;
+    const xPos = (year) => ((year - 2025) / 75) * CHART_W;
+
     return (
         <div className={`${theme === 'dark' ? 'dark' : ''}`}>
-            <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans p-4 md:p-8 flex flex-col items-center transition-colors duration-300">
+            <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
 
-                {/* Top App Bar */}
-                <div className="max-w-7xl w-full flex justify-end items-center gap-4 mb-6">
-                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full shadow-sm">
-                        <Globe size={16} className="text-slate-500 dark:text-slate-400" />
-                        <select
-                            className="bg-transparent text-sm font-medium outline-none cursor-pointer dark:text-slate-200"
-                            value={lang}
-                            onChange={(e) => setLang(e.target.value)}
-                        >
-                            <option value="en">English</option>
-                            <option value="zh">繁體中文 (ZH-TW)</option>
-                            <option value="ko">한국어 (Korean)</option>
-                            <option value="ja">日本語 (Japanese)</option>
-                        </select>
+                {/* Sticky App Bar */}
+                <header className="sticky top-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+                        {/* Brand */}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-300 dark:shadow-none">
+                                <Users size={14} className="text-white" />
+                            </div>
+                            <div className="min-w-0">
+                                <h1 className="text-sm font-bold truncate leading-tight">{t('title')}</h1>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block leading-none">{t('subtitle')}</p>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Mobile controls toggle */}
+                            <button
+                                className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-colors"
+                                onClick={() => setShowControls(!showControls)}
+                                aria-label="Toggle controls"
+                            >
+                                <Settings2 size={12} />
+                                <span className="hidden xs:inline">{t('controls')}</span>
+                                {showControls ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+
+                            {/* Language */}
+                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-full">
+                                <Globe size={12} className="text-slate-400 flex-shrink-0" />
+                                <select
+                                    className="bg-transparent text-xs font-medium outline-none cursor-pointer dark:text-slate-200"
+                                    value={lang}
+                                    onChange={(e) => setLang(e.target.value)}
+                                >
+                                    <option value="en">EN</option>
+                                    <option value="zh">中文</option>
+                                    <option value="ko">한국어</option>
+                                    <option value="ja">日本語</option>
+                                </select>
+                            </div>
+
+                            {/* Theme toggle */}
+                            <button
+                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                className="p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                aria-label="Toggle theme"
+                            >
+                                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                        className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
-                    >
-                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
-                </div>
+                </header>
 
-                <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col gap-5">
 
-                    {/* LEFT PANEL: CONTROLS */}
-                    <div className="lg:col-span-1 flex flex-col gap-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors">
-                            <h1 className="text-xl font-bold mb-1">{t('title')}</h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{t('subtitle')}</p>
+                    {/* Status Banner */}
+                    <div className={`${status.bg} ${status.border} border rounded-2xl p-4 flex items-center justify-between gap-4 transition-colors`}>
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className={`p-2 rounded-xl ${status.bg} ${status.color} flex-shrink-0`}>
+                                <AlertTriangle size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <div className={`text-sm font-bold ${status.color} leading-tight truncate`}>{status.text}</div>
+                                <div className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                                    <span className="hidden sm:inline">{t('depRatio')}: </span>
+                                    <span className="font-semibold">{currentData.depRatio.toFixed(1)}</span>
+                                    <span className="hidden sm:inline"> · {t('totalPop')}: <span className="font-semibold">{(currentData.total / 1e6).toFixed(1)}M</span></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                            <div className="text-2xl sm:text-3xl font-mono font-bold">{currentYear}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('simYear')}</div>
+                        </div>
+                    </div>
 
-                            <div className="space-y-6">
-                                {/* Playback */}
-                                <div>
-                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-between">
-                                        <span>{t('simYear')}</span>
-                                        <span className="text-blue-600 dark:text-blue-400 font-mono font-bold">{currentYear}</span>
-                                    </label>
-                                    <input
-                                        type="range" min="2025" max="2100" value={currentYear}
-                                        onChange={(e) => { setCurrentYear(parseInt(e.target.value)); setIsPlaying(false); }}
-                                        className="w-full accent-blue-600 dark:accent-blue-500 mb-3"
-                                    />
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setIsPlaying(!isPlaying)} className="flex-1 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white py-2 rounded-lg flex items-center justify-center font-medium transition-colors">
-                                            {isPlaying ? <Pause size={18} className="mr-2" /> : <Play size={18} className="mr-2" />}
-                                            {isPlaying ? t('pause') : t('play')}
-                                        </button>
-                                        <button onClick={() => { setCurrentYear(2025); setIsPlaying(false); }} className="px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg flex items-center transition-colors">
-                                            <RotateCcw size={18} />
-                                        </button>
-                                    </div>
+                    {/* Main Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+
+                        {/* LEFT PANEL: CONTROLS */}
+                        <div className={`lg:col-span-1 flex-col gap-4 ${showControls ? 'flex' : 'hidden lg:flex'}`}>
+
+                            {/* Playback Card */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{t('simYear')}</p>
+                                <input
+                                    type="range" min="2025" max="2100" value={currentYear}
+                                    onChange={(e) => { setCurrentYear(parseInt(e.target.value)); setIsPlaying(false); }}
+                                    className="w-full accent-indigo-600 dark:accent-indigo-400 mb-3"
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setIsPlaying(!isPlaying)}
+                                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white py-2.5 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm transition-colors shadow-sm shadow-indigo-200 dark:shadow-none"
+                                    >
+                                        {isPlaying ? <Pause size={15} /> : <Play size={15} />}
+                                        {isPlaying ? t('pause') : t('play')}
+                                    </button>
+                                    <button
+                                        onClick={() => { setCurrentYear(2025); setIsPlaying(false); }}
+                                        className="px-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl flex items-center transition-colors"
+                                    >
+                                        <RotateCcw size={15} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* TFR Card */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{t('tfr')}</p>
+
+                                {/* Mode Toggle */}
+                                <div className="flex gap-1 mb-4 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                                    <button
+                                        className={`flex-1 text-xs py-2 rounded-lg font-semibold transition-all ${!isDynamicTfr ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                        onClick={() => setIsDynamicTfr(false)}
+                                    >{t('fixedTfr')}</button>
+                                    <button
+                                        className={`flex-1 text-xs py-2 rounded-lg font-semibold transition-all ${isDynamicTfr ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                                        onClick={() => setIsDynamicTfr(true)}
+                                    >{t('dynamicTfr')}</button>
                                 </div>
 
-                                <div className="h-px bg-slate-100 dark:bg-slate-700"></div>
-
-                                {/* TFR Configuration */}
-                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                                    <div className="flex gap-2 mb-4 p-1 bg-slate-200 dark:bg-slate-700/50 rounded-lg">
-                                        <button
-                                            className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${!isDynamicTfr ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                                            onClick={() => setIsDynamicTfr(false)}
-                                        >
-                                            {t('fixedTfr')}
-                                        </button>
-                                        <button
-                                            className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${isDynamicTfr ? 'bg-white dark:bg-slate-600 shadow-sm text-indigo-700 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-                                            onClick={() => setIsDynamicTfr(true)}
-                                        >
-                                            {t('dynamicTfr')}
-                                        </button>
-                                    </div>
-
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-between">
-                                            <span>{isDynamicTfr ? t('startingTfr') : t('tfr')}</span>
-                                            <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{tfr.toFixed(2)}</span>
-                                        </label>
+                                        <div className="flex justify-between text-sm mb-2">
+                                            <span className="font-medium text-slate-700 dark:text-slate-300">{isDynamicTfr ? t('startingTfr') : t('tfr')}</span>
+                                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{tfr.toFixed(2)}</span>
+                                        </div>
                                         <input
                                             type="range" min="0.5" max="3.0" step="0.01" value={tfr}
                                             onChange={(e) => setTfr(parseFloat(e.target.value))}
-                                            className="w-full accent-indigo-600 dark:accent-indigo-500"
+                                            className="w-full accent-indigo-600 dark:accent-indigo-400"
                                         />
                                     </div>
 
                                     {isDynamicTfr && (
-                                        <div className="mt-4 space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                        <div className="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-800">
                                             <div>
-                                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-between">
-                                                    <span>{t('terminalTfr')}</span>
-                                                    <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{terminalTfr.toFixed(2)}</span>
-                                                </label>
+                                                <div className="flex justify-between text-sm mb-2">
+                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{t('terminalTfr')}</span>
+                                                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{terminalTfr.toFixed(2)}</span>
+                                                </div>
                                                 <input
                                                     type="range" min="0.5" max="3.0" step="0.01" value={terminalTfr}
                                                     onChange={(e) => setTerminalTfr(parseFloat(e.target.value))}
-                                                    className="w-full accent-indigo-600 dark:accent-indigo-500"
+                                                    className="w-full accent-indigo-600 dark:accent-indigo-400"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-between">
-                                                    <span>{t('targetYear')}</span>
-                                                    <span className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{terminalYear}</span>
-                                                </label>
+                                                <div className="flex justify-between text-sm mb-2">
+                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{t('targetYear')}</span>
+                                                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{terminalYear}</span>
+                                                </div>
                                                 <input
                                                     type="range" min="2030" max="2100" step="1" value={terminalYear}
                                                     onChange={(e) => setTerminalYear(parseInt(e.target.value))}
-                                                    className="w-full accent-indigo-600 dark:accent-indigo-500"
+                                                    className="w-full accent-indigo-600 dark:accent-indigo-400"
                                                 />
                                             </div>
                                         </div>
                                     )}
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
-                                        {isDynamicTfr
-                                            ? t('dynRateNote', { tfr: tfr.toFixed(2), terminalTfr: terminalTfr.toFixed(2), terminalYear })
-                                            : t('repRateNote')}
-                                    </p>
                                 </div>
 
-                                {/* Migration Slider */}
-                                <div>
-                                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex justify-between">
-                                        <span>{t('netMigration')}</span>
-                                        <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">{(migration).toLocaleString()}</span>
-                                    </label>
-                                    <input
-                                        type="range" min="0" max="300000" step="5000" value={migration}
-                                        onChange={(e) => setMigration(parseInt(e.target.value))}
-                                        className="w-full accent-emerald-600 dark:accent-emerald-500"
-                                    />
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                                        {t('migrationNote')}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-800 transition-colors">
-                            <h3 className="text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center">
-                                <Info size={16} className="mr-2" /> {t('videoKey')}
-                            </h3>
-                            <ul className="text-xs text-indigo-800 dark:text-indigo-200/80 space-y-2">
-                                <li><strong>{t('depRatioDesc').split(':')[0]}</strong>: {t('depRatioDesc').split(':')[1]}</li>
-                                <li><span className="font-semibold text-emerald-600 dark:text-emerald-400">{t('healthyDesc').split(':')[0]}:</span> {t('healthyDesc').split(':')[1]}</li>
-                                <li><span className="font-semibold text-orange-600 dark:text-orange-400">{t('declineDesc').split(':')[0]}:</span> {t('declineDesc').split(':')[1]}</li>
-                                <li><span className="font-semibold text-rose-600 dark:text-rose-400">{t('collapseDesc').split(':')[0]}:</span> {t('collapseDesc').split(':')[1]}</li>
-                            </ul>
-
-                            <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-800/50">
-                                <p className="text-xs text-indigo-900 dark:text-indigo-300/80">
-                                    {t('creditPrefix')} <br />
-                                    <a
-                                        href="https://www.youtube.com/watch?v=AultJcNb90c"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="font-semibold text-indigo-600 dark:text-indigo-400 underline hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors"
-                                    >
-                                        {t('videoTitle')}
-                                    </a>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
+                                    {isDynamicTfr
+                                        ? t('dynRateNote', { tfr: tfr.toFixed(2), terminalTfr: terminalTfr.toFixed(2), terminalYear })
+                                        : t('repRateNote')}
                                 </p>
                             </div>
+
+                            {/* Migration Card */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{t('netMigration')}</p>
+                                <div className="flex justify-between text-sm mb-2">
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">{t('netMigration')}</span>
+                                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">+{migration.toLocaleString()}</span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="300000" step="5000" value={migration}
+                                    onChange={(e) => setMigration(parseInt(e.target.value))}
+                                    className="w-full accent-emerald-600 dark:accent-emerald-400"
+                                />
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
+                                    {t('migrationNote')}
+                                </p>
+                            </div>
+
+                            {/* Info Card */}
+                            <div className="bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl p-5 border border-indigo-100 dark:border-indigo-900/60 transition-colors">
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-indigo-700 dark:text-indigo-400 mb-3 flex items-center gap-1.5">
+                                    <Info size={12} /> {t('videoKey')}
+                                </h3>
+                                <ul className="space-y-3">
+                                    <li className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+                                        <span className="font-bold text-emerald-600 dark:text-emerald-400">≤45 — </span>
+                                        {t('healthyDesc').split(':')[1]}
+                                    </li>
+                                    <li className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+                                        <span className="font-bold text-amber-600 dark:text-amber-400">~70 — </span>
+                                        {t('declineDesc').split(':')[1]}
+                                    </li>
+                                    <li className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+                                        <span className="font-bold text-rose-600 dark:text-rose-400">100+ — </span>
+                                        {t('collapseDesc').split(':')[1]}
+                                    </li>
+                                </ul>
+                                <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-900">
+                                    <p className="text-[10px] text-indigo-700 dark:text-indigo-400 leading-relaxed">
+                                        {t('creditPrefix')}<br />
+                                        <a
+                                            href="https://www.youtube.com/watch?v=AultJcNb90c"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-semibold underline hover:text-indigo-900 dark:hover:text-indigo-200 transition-colors"
+                                        >
+                                            {t('videoTitle')}
+                                        </a>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* RIGHT PANEL: DASHBOARD */}
-                    <div className="lg:col-span-3 flex flex-col gap-6">
+                        {/* RIGHT PANEL: DASHBOARD */}
+                        <div className="lg:col-span-3 flex flex-col gap-5">
 
-                        {/* Top Metrics Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg"><Users size={20} /></div>
-                                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('totalPop')}</h3>
+                            {/* Metric Cards — always 3 columns, font adapts */}
+                            <div className="grid grid-cols-3 gap-3">
+                                {/* Total Population */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-3 sm:p-5 transition-colors">
+                                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                        <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg flex-shrink-0">
+                                            <Users size={14} className="sm:hidden" /><Users size={18} className="hidden sm:block" />
+                                        </div>
+                                        <h3 className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight">{t('totalPop')}</h3>
+                                    </div>
+                                    <div className="text-lg sm:text-3xl font-bold tabular-nums">{(currentData.total / 1e6).toFixed(1)}M</div>
+                                    <div className="text-[9px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 hidden sm:block">{t('startingAt')}</div>
                                 </div>
-                                <div className="text-3xl font-bold">{(currentData.total / 1000000).toFixed(2)}M</div>
-                                <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">{t('startingAt')}</div>
+
+                                {/* Dependency Ratio */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-3 sm:p-5 transition-colors">
+                                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                        <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${status.bg} ${status.color}`}>
+                                            <AlertTriangle size={14} className="sm:hidden" /><AlertTriangle size={18} className="hidden sm:block" />
+                                        </div>
+                                        <h3 className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight">{t('depRatio')}</h3>
+                                    </div>
+                                    <div className="text-lg sm:text-3xl font-bold tabular-nums">{currentData.depRatio.toFixed(1)}</div>
+                                    <div className={`text-[9px] sm:text-xs font-bold mt-0.5 sm:mt-1 ${status.color} leading-tight`}>{status.text}</div>
+                                </div>
+
+                                {/* Workforce */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-3 sm:p-5 transition-colors">
+                                    <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                        <div className="p-1.5 sm:p-2 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-lg flex-shrink-0">
+                                            <Activity size={14} className="sm:hidden" /><Activity size={18} className="hidden sm:block" />
+                                        </div>
+                                        <h3 className="text-[9px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight">{t('workforceSize')}</h3>
+                                    </div>
+                                    <div className="text-lg sm:text-3xl font-bold tabular-nums">{(currentData.working / 1e6).toFixed(1)}M</div>
+                                    <div className="text-[9px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 hidden sm:block">
+                                        {t('supports', { num: ((currentData.youth + currentData.elderly) / 1e6).toFixed(1) })}
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className={`p-2 rounded-lg ${status.bg} ${status.color}`}><AlertTriangle size={20} /></div>
-                                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('depRatio')}</h3>
-                                </div>
-                                <div className="text-3xl font-bold">{currentData.depRatio.toFixed(1)}</div>
-                                <div className={`text-xs font-semibold mt-1 ${status.color}`}>{status.text}</div>
-                            </div>
+                            {/* Charts Row */}
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
-                            <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-lg"><Activity size={20} /></div>
-                                    <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400">{t('workforceSize')}</h3>
-                                </div>
-                                <div className="text-3xl font-bold">{(currentData.working / 1000000).toFixed(2)}M</div>
-                                <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                                    {t('supports', { num: ((currentData.youth + currentData.elderly) / 1000000).toFixed(2) })}
-                                </div>
-                            </div>
-                        </div>
+                                {/* Chart 1: Dependency Ratio Trajectory */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
+                                    <h2 className="text-base font-bold">{t('trajTitle')}</h2>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('trajSub')}</p>
 
-                        {/* Charts Row */}
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                    {/* SVG with viewBox that includes space for right-side y-axis labels */}
+                                    <svg viewBox="0 -5 840 315" className="w-full h-auto" aria-label={t('trajTitle')}>
+                                        {/* Status zone bands — chart area 0-760 */}
+                                        <rect x="0" y={(150 - 50) * 2.5} width={CHART_W} height={50 * 2.5} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity="0.35" />
+                                        <rect x="0" y={(150 - 65) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#78350f" : "#fef9c3"} opacity="0.35" />
+                                        <rect x="0" y={(150 - 80) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#7c2d12" : "#fed7aa"} opacity="0.35" />
+                                        <rect x="0" y={0} width={CHART_W} height={70 * 2.5} fill={theme === 'dark' ? "#7f1d1d" : "#fecaca"} opacity="0.35" />
 
-                            {/* Chart 1: Dependency Trajectory */}
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors">
-                                <h2 className="text-lg font-bold mb-1">{t('trajTitle')}</h2>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">{t('trajSub')}</p>
-
-                                <div className="relative w-full h-64">
-                                    <svg viewBox="0 0 800 300" className="w-full h-full overflow-visible">
-                                        {/* Bands */}
-                                        <rect x="0" y={(150 - 50) * 2.5} width="800" height={50 * 2.5} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity={theme === 'dark' ? "0.3" : "0.4"} />
-                                        <rect x="0" y={(150 - 65) * 2.5} width="800" height={15 * 2.5} fill={theme === 'dark' ? "#713f12" : "#fef08a"} opacity={theme === 'dark' ? "0.3" : "0.4"} />
-                                        <rect x="0" y={(150 - 80) * 2.5} width="800" height={15 * 2.5} fill={theme === 'dark' ? "#7c2d12" : "#fed7aa"} opacity={theme === 'dark' ? "0.3" : "0.4"} />
-                                        <rect x="0" y={0} width="800" height={70 * 2.5} fill={theme === 'dark' ? "#7f1d1d" : "#fecaca"} opacity={theme === 'dark' ? "0.3" : "0.4"} />
-
-                                        {/* Grid Lines & Labels */}
+                                        {/* Grid lines + right-side labels (at x=770+, well inside 840 viewBox) */}
                                         {[50, 65, 80, 100, 130].map(val => {
                                             const y = (150 - val) * 2.5;
                                             return (
                                                 <g key={val}>
-                                                    <line x1="0" y1={y} x2="800" y2={y} stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} strokeWidth="1" strokeDasharray="4 4" />
-                                                    <text x="805" y={y + 4} fontSize="12" fill={theme === 'dark' ? '#94a3b8' : '#64748b'} fontWeight="bold">{val}</text>
+                                                    <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'} strokeWidth="1.5" strokeDasharray="5 4" />
+                                                    <text x={CHART_W + 10} y={y + 4} fontSize="13" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} fontWeight="600">{val}</text>
                                                 </g>
-                                            )
+                                            );
                                         })}
 
-                                        {/* Main Line */}
+                                        {/* Area fill under line */}
                                         <path
-                                            d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${((h.year - 2025) / 75) * 800} ${(150 - Math.min(150, h.depRatio)) * 2.5}`).join(' ')}
-                                            fill="none" stroke={theme === 'dark' ? '#cbd5e1' : '#1e293b'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+                                            d={[
+                                                ...history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(150 - Math.min(150, h.depRatio)) * 2.5}`),
+                                                `L ${CHART_W} 300`,
+                                                'L 0 300',
+                                                'Z'
+                                            ].join(' ')}
+                                            fill={theme === 'dark' ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.06)'}
                                         />
 
-                                        {/* Current Year Marker */}
+                                        {/* Main trend line */}
+                                        <path
+                                            d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(150 - Math.min(150, h.depRatio)) * 2.5}`).join(' ')}
+                                            fill="none"
+                                            stroke={theme === 'dark' ? '#e2e8f0' : '#334155'}
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+
+                                        {/* Current year marker */}
                                         <line
-                                            x1={((currentYear - 2025) / 75) * 800} y1="0"
-                                            x2={((currentYear - 2025) / 75) * 800} y2="300"
-                                            stroke="#3b82f6" strokeWidth="2" strokeDasharray="4 4"
+                                            x1={xPos(currentYear)} y1="0"
+                                            x2={xPos(currentYear)} y2="300"
+                                            stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3"
                                         />
                                         <circle
-                                            cx={((currentYear - 2025) / 75) * 800}
+                                            cx={xPos(currentYear)}
                                             cy={(150 - Math.min(150, currentData.depRatio)) * 2.5}
-                                            r="6" fill="#3b82f6" stroke={theme === 'dark' ? '#1e293b' : 'white'} strokeWidth="2"
+                                            r="5" fill="#6366f1" stroke={theme === 'dark' ? '#0f172a' : 'white'} strokeWidth="2.5"
                                         />
                                     </svg>
-                                    {/* X Axis Labels */}
-                                    <div className="flex justify-between mt-2 text-xs font-semibold text-slate-400">
-                                        <span>2025</span>
-                                        <span>2050</span>
-                                        <span>2075</span>
-                                        <span>2100</span>
+
+                                    {/* X-axis labels */}
+                                    <div className="flex justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-600 mt-1 pr-12">
+                                        <span>2025</span><span>2050</span><span>2075</span><span>2100</span>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Chart 2: Demographic Pyramid */}
-                            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 flex flex-col transition-colors">
-                                <h2 className="text-lg font-bold mb-1">{t('pyrTitle')}</h2>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">{t('pyrSub', { year: currentYear })}</p>
+                                {/* Chart 2: Demographic Pyramid */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
+                                    <h2 className="text-base font-bold">{t('pyrTitle')}</h2>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('pyrSub', { year: currentYear })}</p>
 
-                                <div className="flex-1 relative w-full flex flex-col justify-center items-center">
-                                    <svg viewBox="0 0 400 300" className="w-full max-w-sm h-auto overflow-visible">
-                                        {/* Center Line */}
-                                        <line x1="200" y1="0" x2="200" y2="300" stroke={theme === 'dark' ? '#475569' : '#e2e8f0'} strokeWidth="1" />
+                                    {/* Pyramid uses full width, viewBox gives space for age labels on left */}
+                                    <svg viewBox="-22 -5 462 318" className="w-full h-auto" aria-label={t('pyrTitle')}>
+                                        {/* Center axis */}
+                                        <line x1="200" y1="0" x2="200" y2="305" stroke={theme === 'dark' ? '#1e293b' : '#f1f5f9'} strokeWidth="1.5" />
 
-                                        {/* Y Axis Age Labels (every 20 years) */}
-                                        {[0, 20, 40, 60, 80, 100].map(age => (
-                                            <text key={`label-${age}`} x="190" y={300 - (age * 3) + 4} fontSize="10" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} textAnchor="end">{age}</text>
+                                        {/* Age labels every 10 years */}
+                                        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(age => (
+                                            <text key={age} x="188" y={305 - (age * 3) + 4} fontSize="9" fill={theme === 'dark' ? '#475569' : '#94a3b8'} textAnchor="end">{age}</text>
                                         ))}
 
-                                        {/* Bars */}
+                                        {/* Population bars (both sides mirrored) */}
                                         {currentPopArray.map((pop, age) => {
-                                            // Maximum population mapped to width of 180 (so 2 sides = 360 wide max)
-                                            // Peak is roughly ~200k per side in 2025 base
-                                            const w = Math.min((pop / 2 / 200000) * 180, 195);
-                                            const y = 300 - (age * 3);
-                                            let fill = theme === 'dark' ? "rgb(192 132 252)" : "rgb(168 85 247)"; // Elderly
-                                            if (age < 15) fill = theme === 'dark' ? "rgb(74 222 128)" : "rgb(34 197 94)"; // Youth
-                                            else if (age < 65) fill = theme === 'dark' ? "rgb(96 165 250)" : "rgb(59 130 246)"; // Working
-
+                                            const w = Math.min((pop / 2 / 200000) * 185, 195);
+                                            const y = 305 - (age * 3);
+                                            const fill = age < 15
+                                                ? (theme === 'dark' ? '#4ade80' : '#22c55e')
+                                                : age < 65
+                                                    ? (theme === 'dark' ? '#818cf8' : '#6366f1')
+                                                    : (theme === 'dark' ? '#c084fc' : '#a855f7');
                                             return (
                                                 <g key={age}>
-                                                    <rect x={200 - w} y={y - 2} width={w} height={2.5} fill={fill} />
-                                                    <rect x={200} y={y - 2} width={w} height={2.5} fill={fill} />
+                                                    <rect x={200 - w} y={y - 2.5} width={w} height={2.5} fill={fill} opacity="0.85" />
+                                                    <rect x={200} y={y - 2.5} width={w} height={2.5} fill={fill} opacity="0.85" />
                                                 </g>
-                                            )
+                                            );
                                         })}
                                     </svg>
 
-                                    {/* Legend */}
-                                    <div className="flex gap-4 mt-6 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                        <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-green-500 dark:bg-green-400"></span> {t('youth')}</div>
-                                        <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500 dark:bg-blue-400"></span> {t('working')}</div>
-                                        <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-purple-500 dark:bg-purple-400"></span> {t('elderly')}</div>
+                                    <div className="flex gap-4 justify-center mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-green-500"></span>{t('youth')}</div>
+                                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-500"></span>{t('working')}</div>
+                                        <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-purple-500"></span>{t('elderly')}</div>
                                     </div>
                                 </div>
                             </div>
 
-                        </div>
+                            {/* Population Composition Chart */}
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
+                                <h2 className="text-base font-bold">{t('compTitle')}</h2>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('compSub')}</p>
 
-                        {/* Absolute Population Breakdown Chart */}
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 transition-colors">
-                            <h2 className="text-lg font-bold mb-1">{t('compTitle')}</h2>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">{t('compSub')}</p>
-
-                            <div className="relative w-full h-48">
-                                <svg viewBox="0 0 800 200" className="w-full h-full overflow-visible">
-                                    {/* Grid Lines */}
-                                    {[0, 5, 10, 15, 20, 25].map(val => {
+                                {/* viewBox extends left to include y-axis labels (-50) */}
+                                <svg viewBox="-50 -5 880 220" className="w-full h-auto" aria-label={t('compTitle')}>
+                                    {/* Grid lines + left-side labels */}
+                                    {[5, 10, 15, 20, 25].map(val => {
                                         const y = 200 - (val / 25) * 200;
                                         return (
                                             <g key={val}>
-                                                <line x1="0" y1={y} x2="800" y2={y} stroke={theme === 'dark' ? '#334155' : '#f1f5f9'} strokeWidth="1" />
-                                                {val > 0 && <text x="-25" y={y + 4} fontSize="12" fill={theme === 'dark' ? '#64748b' : '#94a3b8'}>{val}M</text>}
+                                                <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#1e293b' : '#f1f5f9'} strokeWidth="1" />
+                                                <text x="-8" y={y + 4} fontSize="11" fill={theme === 'dark' ? '#475569' : '#94a3b8'} textAnchor="end">{val}M</text>
                                             </g>
-                                        )
+                                        );
                                     })}
 
-                                    {/* Paths */}
-                                    {/* Total */}
-                                    <path d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${((h.year - 2025) / 75) * 800} ${200 - (h.total / 25000000) * 200}`).join(' ')}
-                                        fill="none" stroke={theme === 'dark' ? '#94a3b8' : '#64748b'} strokeWidth="2" strokeDasharray="4 4" />
+                                    {/* Total (dashed) */}
+                                    <path
+                                        d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${200 - (h.total / 25e6) * 200}`).join(' ')}
+                                        fill="none" stroke={theme === 'dark' ? '#334155' : '#cbd5e1'} strokeWidth="1.5" strokeDasharray="6 3"
+                                    />
                                     {/* Working */}
-                                    <path d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${((h.year - 2025) / 75) * 800} ${200 - (h.working / 25000000) * 200}`).join(' ')}
-                                        fill="none" stroke={theme === 'dark' ? '#60a5fa' : '#3b82f6'} strokeWidth="3" />
+                                    <path
+                                        d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${200 - (h.working / 25e6) * 200}`).join(' ')}
+                                        fill="none" stroke={theme === 'dark' ? '#818cf8' : '#6366f1'} strokeWidth="2.5"
+                                    />
                                     {/* Elderly */}
-                                    <path d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${((h.year - 2025) / 75) * 800} ${200 - (h.elderly / 25000000) * 200}`).join(' ')}
-                                        fill="none" stroke={theme === 'dark' ? '#c084fc' : '#a855f7'} strokeWidth="2" />
+                                    <path
+                                        d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${200 - (h.elderly / 25e6) * 200}`).join(' ')}
+                                        fill="none" stroke={theme === 'dark' ? '#c084fc' : '#a855f7'} strokeWidth="2"
+                                    />
                                     {/* Youth */}
-                                    <path d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${((h.year - 2025) / 75) * 800} ${200 - (h.youth / 25000000) * 200}`).join(' ')}
-                                        fill="none" stroke={theme === 'dark' ? '#4ade80' : '#22c55e'} strokeWidth="2" />
+                                    <path
+                                        d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${200 - (h.youth / 25e6) * 200}`).join(' ')}
+                                        fill="none" stroke={theme === 'dark' ? '#4ade80' : '#22c55e'} strokeWidth="2"
+                                    />
 
-                                    {/* Current Year Marker */}
+                                    {/* Current year marker */}
                                     <line
-                                        x1={((currentYear - 2025) / 75) * 800} y1="0"
-                                        x2={((currentYear - 2025) / 75) * 800} y2="200"
-                                        stroke={theme === 'dark' ? '#f8fafc' : '#1e293b'} strokeWidth="1" strokeDasharray="4 4"
+                                        x1={xPos(currentYear)} y1="0"
+                                        x2={xPos(currentYear)} y2="200"
+                                        stroke="#6366f1" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7"
                                     />
                                 </svg>
-                            </div>
-                            <div className="flex gap-6 justify-center mt-4 text-xs font-medium text-slate-600 dark:text-slate-400">
-                                <div className="flex items-center gap-1"><span className="w-4 h-0.5 bg-slate-400 dark:bg-slate-500 border-dashed border-b"></span> {t('total')}</div>
-                                <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500 dark:bg-blue-400"></span> {t('working')}</div>
-                                <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-purple-500 dark:bg-purple-400"></span> {t('elderly')}</div>
-                                <div className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 dark:bg-green-400"></span> {t('youth')}</div>
+
+                                {/* X-axis + Legend */}
+                                <div className="flex justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-600 mt-1">
+                                    <span>2025</span><span>2050</span><span>2075</span><span>2100</span>
+                                </div>
+                                <div className="flex flex-wrap gap-4 justify-center mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="block w-5 h-0" style={{ borderTop: '2px dashed #94a3b8' }}></span>
+                                        {t('total')}
+                                    </div>
+                                    <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-indigo-500"></span>{t('working')}</div>
+                                    <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-purple-500"></span>{t('elderly')}</div>
+                                    <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500"></span>{t('youth')}</div>
+                                </div>
                             </div>
                         </div>
+
                     </div>
 
-                </div>
-
-                {/* Footer */}
-                <div className="max-w-7xl w-full mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-center">
-                    <div className="text-xs text-slate-500 dark:text-slate-400 flex gap-4 flex-wrap justify-center">
-                        <a href="https://lawrencehwang.github.io/taiwan-demographics/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
-                            {lang === 'en' ? 'Live Demo' : lang === 'zh' ? '線上演示' : lang === 'ko' ? '라이브 데모' : 'ライブデモ'}
-                        </a>
-                        <span>•</span>
-                        <a href="https://github.com/LawrenceHwang/taiwan-demographics" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
-                            {lang === 'en' ? 'GitHub Repository' : lang === 'zh' ? 'GitHub 儲存庫' : lang === 'ko' ? 'GitHub 저장소' : 'GitHub リポジトリ'}
-                        </a>
+                    {/* Footer */}
+                    <div className="border-t border-slate-200 dark:border-slate-800 pt-5 flex justify-center">
+                        <div className="text-xs text-slate-400 dark:text-slate-600 flex gap-4 flex-wrap justify-center">
+                            <a href="https://lawrencehwang.github.io/taiwan-demographics/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
+                                {lang === 'en' ? 'Live Demo' : lang === 'zh' ? '線上演示' : lang === 'ko' ? '라이브 데모' : 'ライブデモ'}
+                            </a>
+                            <span>·</span>
+                            <a href="https://github.com/LawrenceHwang/taiwan-demographics" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
+                                GitHub
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
