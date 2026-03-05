@@ -472,7 +472,7 @@ export default function App() {
     const status = getDependencyStatus(currentData.depRatio);
 
     const CHART_W = 760;
-    const xPos = (year) => ((year - 2025) / 75) * CHART_W;
+    const xPos = (year) => ((year - 2025) / 150) * CHART_W;
 
     return (
         <div className={`${theme === 'dark' ? 'dark' : ''}`}>
