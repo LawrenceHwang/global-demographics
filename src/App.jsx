@@ -14,9 +14,9 @@ const COUNTRY_CONFIG = {
         youth: 2_680_000, working: 15_950_000, elderly: 4_670_000,
         mortalityProfile: 'developed',
         migrationMin: -100_000, migrationMax: 500_000, migrationStep: 5_000,
-        // Piecewise linear age-distribution anchors: [age, relative_weight]
-        // Normalized to hit exact youth / working / elderly bucket totals.
-        anchors: [[0, 1.3], [15, 2.2], [30, 3.0], [45, 4.2], [64, 3.0], [85, 0.8], [100, 0]],
+        // Per-cohort weights calibrated to UN WPP 2024 single-year estimates (unit ≈ 100K/yr).
+        // Shape: small youth (declining births), large 35-55 working bulge, declining elderly.
+        anchors: [[0, 1.6], [5, 1.8], [10, 1.9], [15, 2.0], [20, 2.2], [25, 2.8], [30, 3.6], [35, 3.9], [40, 3.9], [45, 3.8], [50, 3.7], [55, 3.5], [60, 3.1], [65, 2.8], [70, 2.2], [75, 1.6], [80, 1.2], [85, 0.7], [90, 0.36], [95, 0.16], [100, 0.05]],
     },
     us: {
         flag: '🇺🇸',
@@ -43,8 +43,9 @@ const COUNTRY_CONFIG = {
         youth: 13_900_000, working: 73_200_000, elderly: 36_200_000,
         mortalityProfile: 'developed',
         migrationMin: -100_000, migrationMax: 500_000, migrationStep: 10_000,
-        // Aging bulge: large 45-70 cohorts (baby boom + echo), small youth
-        anchors: [[0, 1.5], [15, 1.6], [25, 2.5], [35, 3.0], [45, 4.5], [55, 4.0], [64, 3.5], [70, 3.0], [75, 2.0], [80, 1.5], [90, 0.7], [100, 0.1]],
+        // Calibrated to UN WPP 2024: Dankai Jr. baby boom (born 1971-74) peaks at age 50-54;
+        // very small young cohorts (births ~800K/yr recently vs ~2M/yr in 1970s).
+        anchors: [[0, 1.5], [5, 1.8], [10, 2.0], [15, 2.1], [20, 2.2], [25, 2.3], [30, 2.5], [35, 2.5], [40, 3.0], [45, 3.1], [50, 4.0], [55, 3.8], [60, 3.3], [65, 3.2], [70, 3.0], [75, 2.2], [80, 1.3], [85, 0.7], [90, 0.3], [95, 0.10], [100, 0.03]],
     },
     korea: {
         flag: '🇰🇷',
@@ -53,8 +54,9 @@ const COUNTRY_CONFIG = {
         youth: 5_700_000, working: 36_500_000, elderly: 9_500_000,
         mortalityProfile: 'developed',
         migrationMin: -100_000, migrationMax: 500_000, migrationStep: 10_000,
-        // Extremely small youth, dominant 30-50 working cohort
-        anchors: [[0, 0.8], [10, 1.2], [20, 2.0], [30, 3.2], [40, 4.2], [50, 3.8], [58, 3.5], [64, 2.5], [70, 2.0], [80, 1.0], [90, 0.4], [100, 0.05]],
+        // Calibrated to Statistics Korea 2024: births collapsed from ~1M/yr (1965) to ~250K/yr (2023).
+        // Large 50-64 cohorts (born 1961-75); much smaller youth than working age.
+        anchors: [[0, 2.6], [5, 3.3], [10, 4.4], [15, 4.7], [20, 4.9], [25, 6.4], [30, 7.0], [35, 6.5], [40, 7.0], [45, 7.5], [50, 9.0], [55, 9.0], [60, 10.0], [65, 6.0], [70, 4.7], [75, 3.7], [80, 2.6], [85, 1.4], [90, 0.6], [95, 0.18], [100, 0.05]],
     },
     china: {
         flag: '🇨🇳',
@@ -101,7 +103,8 @@ const COUNTRY_CONFIG = {
 
 // Build a 101-element age-distribution array from country config.
 // Uses piecewise linear interpolation between anchor points,
-// then normalizes each bucket (youth/working/elderly) to hit the exact target.
+// then normalizes to total population (single factor) to avoid boundary discontinuities.
+// Anchors are calibrated to actual per-cohort population proportions (UN WPP 2024).
 function buildCountryPopulation({ anchors, youth: tY, working: tW, elderly: tE }) {
     const pop = new Array(101).fill(0);
     for (let seg = 0; seg < anchors.length - 1; seg++) {
@@ -112,14 +115,10 @@ function buildCountryPopulation({ anchors, youth: tY, working: tW, elderly: tE }
             pop[age] = w0 + t * (w1 - w0);
         }
     }
-    let y = 0, w = 0, e = 0;
-    for (let i = 0; i <= 14; i++) y += pop[i];
-    for (let i = 15; i <= 64; i++) w += pop[i];
-    for (let i = 65; i <= 100; i++) e += pop[i];
-    const yF = tY / y, wF = tW / w, eF = tE / e;
-    for (let i = 0; i <= 14; i++) pop[i] *= yF;
-    for (let i = 15; i <= 64; i++) pop[i] *= wF;
-    for (let i = 65; i <= 100; i++) pop[i] *= eF;
+    const total = tY + tW + tE;
+    const sum = pop.reduce((a, b) => a + b, 0);
+    const factor = sum > 0 ? total / sum : 1;
+    for (let i = 0; i <= 100; i++) pop[i] *= factor;
     return pop;
 }
 
@@ -447,8 +446,6 @@ export default function App() {
     const yAxisStepM = (yAxisMax / 1e6) / 5;
     const yAxisLabels = [1, 2, 3, 4, 5].map(i => yAxisStepM * i);
 
-    const maxCohort = useMemo(() => Math.max(...currentPopArray), [currentPopArray]);
-
     const totalInit = cfg.youth + cfg.working + cfg.elderly;
 
     useEffect(() => {
@@ -767,7 +764,7 @@ export default function App() {
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
                                     <h2 className="text-base font-bold">{t('trajTitle')}</h2>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('trajSub')}</p>
-                                    <svg viewBox="0 -5 840 315" className="w-full h-auto" aria-label={t('trajTitle')}>
+                                    <svg viewBox="-46 -5 848 335" className="w-full h-auto" aria-label={t('trajTitle')}>
                                         <rect x="0" y={(150 - 50) * 2.5} width={CHART_W} height={50 * 2.5} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity="0.35" />
                                         <rect x="0" y={(150 - 65) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#78350f" : "#fef9c3"} opacity="0.35" />
                                         <rect x="0" y={(150 - 80) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#7c2d12" : "#fed7aa"} opacity="0.35" />
@@ -777,7 +774,7 @@ export default function App() {
                                             return (
                                                 <g key={val}>
                                                     <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#1e293b' : '#e2e8f0'} strokeWidth="1.5" strokeDasharray="5 4" />
-                                                    <text x={CHART_W + 10} y={y + 4} fontSize="13" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} fontWeight="600">{val}</text>
+                                                    <text x="-8" y={y + 7} fontSize="22" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} fontWeight="600" textAnchor="end">{val}</text>
                                                 </g>
                                             );
                                         })}
@@ -792,38 +789,59 @@ export default function App() {
                                             d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(150 - Math.min(150, h.depRatio)) * 2.5}`).join(' ')}
                                             fill="none" stroke={theme === 'dark' ? '#e2e8f0' : '#334155'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                                         />
-                                        <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2="300" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
+                                        <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2="310" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
                                         <circle cx={xPos(currentYear)} cy={(150 - Math.min(150, currentData.depRatio)) * 2.5} r="5" fill="#6366f1" stroke={theme === 'dark' ? '#0f172a' : 'white'} strokeWidth="2.5" />
+                                        {[2025, 2050, 2075, 2100].map((yr, i) => (
+                                            <text key={yr} x={xPos(yr)} y="322" fontSize="20" fill={theme === 'dark' ? '#475569' : '#94a3b8'} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
+                                        ))}
                                     </svg>
-                                    <div className="flex justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-600 mt-1 pr-12">
-                                        <span>2025</span><span>2050</span><span>2075</span><span>2100</span>
-                                    </div>
                                 </div>
 
                                 {/* Chart 2: Demographic Pyramid */}
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
                                     <h2 className="text-base font-bold">{t('pyrTitle')}</h2>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('pyrSub', { year: currentYear })}</p>
-                                    <svg viewBox="-22 -5 462 318" className="w-full h-auto" aria-label={t('pyrTitle')}>
-                                        <line x1="200" y1="0" x2="200" y2="305" stroke={theme === 'dark' ? '#1e293b' : '#f1f5f9'} strokeWidth="1.5" />
-                                        {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(age => (
-                                            <text key={age} x="188" y={305 - (age * 3) + 4} fontSize="9" fill={theme === 'dark' ? '#475569' : '#94a3b8'} textAnchor="end">{age}</text>
-                                        ))}
-                                        {currentPopArray.map((pop, age) => {
-                                            const w = maxCohort > 0 ? Math.min((pop / maxCohort) * 185, 195) : 0;
-                                            const y = 305 - (age * 3);
-                                            const fill = age < 15
+                                    <svg viewBox="-10 -10 460 315" className="w-full h-auto" aria-label={t('pyrTitle')}>
+                                        {(() => {
+                                            // Aggregate to 5-year age bands for smooth, readable bars
+                                            const ageBands = [];
+                                            for (let g = 0; g < 20; g++) {
+                                                let total = 0;
+                                                for (let age = g * 5; age <= g * 5 + 4; age++) total += currentPopArray[age];
+                                                ageBands.push({ startAge: g * 5, total });
+                                            }
+                                            ageBands.push({ startAge: 100, total: currentPopArray[100] });
+                                            const maxBand = Math.max(...ageBands.map(b => b.total));
+                                            const barH = 13, stride = 14, maxBarW = 185, cx = 225;
+                                            const getY = (idx) => (20 - idx) * stride;
+                                            const barFill = (startAge) => startAge < 15
                                                 ? (theme === 'dark' ? '#4ade80' : '#22c55e')
-                                                : age < 65
+                                                : startAge < 65
                                                     ? (theme === 'dark' ? '#818cf8' : '#6366f1')
                                                     : (theme === 'dark' ? '#c084fc' : '#a855f7');
                                             return (
-                                                <g key={age}>
-                                                    <rect x={200 - w} y={y - 2.5} width={w} height={2.5} fill={fill} opacity="0.85" />
-                                                    <rect x={200} y={y - 2.5} width={w} height={2.5} fill={fill} opacity="0.85" />
-                                                </g>
+                                                <>
+                                                    <line x1={cx} y1={getY(20)} x2={cx} y2={getY(0) + barH} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} strokeWidth="1" />
+                                                    {ageBands.map(({ startAge, total }, idx) => {
+                                                        const w = maxBand > 0 ? (total / maxBand) * maxBarW : 0;
+                                                        const y = getY(idx);
+                                                        const fill = barFill(startAge);
+                                                        const showLabel = startAge % 20 === 0;
+                                                        return (
+                                                            <g key={idx}>
+                                                                <rect x={cx - w} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
+                                                                <rect x={cx} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
+                                                                {showLabel && (
+                                                                    <text x={cx - 4} y={y + barH - 2} fontSize="13" fill={theme === 'dark' ? '#64748b' : '#94a3b8'} textAnchor="end">
+                                                                        {startAge === 100 ? '100+' : startAge}
+                                                                    </text>
+                                                                )}
+                                                            </g>
+                                                        );
+                                                    })}
+                                                </>
                                             );
-                                        })}
+                                        })()}
                                     </svg>
                                     <div className="flex gap-4 justify-center mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
                                         <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-green-500"></span>{t('youth')}</div>
