@@ -746,7 +746,7 @@ export default function App() {
                         <div className="lg:col-span-3 flex flex-col gap-5">
 
                             {/* Metric Cards */}
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-3 sm:p-5 transition-colors">
                                     <div className="flex items-center gap-2 mb-2 sm:mb-3">
                                         <div className="p-1.5 sm:p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg flex-shrink-0">
