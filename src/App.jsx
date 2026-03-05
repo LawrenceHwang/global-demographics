@@ -111,7 +111,7 @@ function buildCountryPopulation({ anchors, youth: tY, working: tW, elderly: tE }
         const [a0, w0] = anchors[seg];
         const [a1, w1] = anchors[seg + 1];
         for (let age = a0; age <= a1; age++) {
-            const t = (a1 === a0) ? 1 : (age - a0) / (a1 - a0);
+            const t = (a1 - a0) === 0 ? 0 : (age - a0) / (a1 - a0);
             pop[age] = w0 + t * (w1 - w0);
         }
     }
