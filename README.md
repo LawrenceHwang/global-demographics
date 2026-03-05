@@ -1,8 +1,8 @@
-# Taiwan Demographics Simulation Engine
+# Global Demographics Simulation Engine
 
 **Languages:** English | [繁體中文](README.zh-TW.md)
 
-An interactive React SPA that models Taiwan's population trajectory from **2025 to 2100**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
+An interactive React SPA that models population trajectories from **2025 to 2100** for **9 countries and regions**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
 
 **[→ Live Demo](https://lawrencehwang.github.io/taiwan-demographics/)**
 
@@ -10,20 +10,45 @@ An interactive React SPA that models Taiwan's population trajectory from **2025 
 
 ---
 
+## Countries / Regions
+
+| Country | 2025 TFR | Default Net Migration | Notes |
+|---|---|---|---|
+| 🇹🇼 Taiwan | 0.86 | +20,000 | One of the world's lowest TFRs |
+| 🇺🇸 United States | 1.62 | +1,000,000 | High immigration offsetting low TFR |
+| 🇨🇦 Canada | 1.44 | +400,000 | Strong immigration-driven growth |
+| 🇯🇵 Japan | 1.20 | +100,000 | Paradigmatic aging society |
+| 🇰🇷 South Korea | 0.72 | +100,000 | Record-low TFR (2023) |
+| 🇨🇳 China | 1.09 | −100,000 | One-child policy legacy visible in pyramid |
+| 🇩🇪 Germany | 1.35 | +300,000 | Post-war baby boom cohort approaching retirement |
+| 🇳🇪 Niger | 6.73 | −20,000 | World's **highest** TFR — rapid growth |
+| 🇲🇱 Mali | 5.97 | −30,000 | Second-highest TFR globally |
+
+Niger and Mali are included as high-TFR reference points to show the opposite end of the demographic spectrum.
+
+---
+
 ## About
 
-Taiwan has one of the lowest Total Fertility Rates in the world (~0.86 as of 2025), pushing it rapidly toward a "super-aged" society. This simulation uses a standard **Cohort-Component demographic model** to project how different policy levers alter Taiwan's future.
+This simulation uses a standard **Cohort-Component demographic model** to project how different policy levers alter a country's future population structure.
 
 The core metric is the **Dependency Ratio** — the number of youth and elderly dependents per 100 working-age adults — tracked against thresholds from *Healthy Demographic Dividend* to *System Collapse*.
 
+Each country ships with:
+- Calibrated 2025 age distributions (from national statistics offices and UN WPP 2024)
+- Country-specific TFR and net migration defaults
+- Appropriate mortality profile (developed-world ~LE 80+ vs. high-fertility ~LE 62)
+
 ## Features
 
+- **9 Countries / Regions** — Switch instantly; simulation resets to each country's verified 2025 baseline
 - **Real-time Cohort Simulation** — Iterates 101 age cohorts year-by-year, applying mortality, fertility, and migration rates
 - **Fixed vs. Dynamic TFR Scenarios** — Test a constant rate or model a gradual cultural/policy shift with a linearly interpolated "Terminal Target TFR"
 - **Interactive Dashboards:**
   - Dependency ratio trajectory with colored threshold zones
-  - Real-time demographic pyramid (watch it flip upside-down)
-  - Absolute population composition over time (Youth / Working / Elderly / Total)
+  - Real-time demographic pyramid (watch it flip upside-down — or grow ever wider for Niger/Mali)
+  - Absolute population composition over time (Youth / Working / Elderly / Total) with auto-scaled Y-axis
+- **Cited Data Sources** — Collapsible footer lists every primary source per country
 - **i18n** — Fully translated: English, 繁體中文, 한국어, 日本語
 - **Light / Dark mode**
 
@@ -78,15 +103,30 @@ A workflow is included at `.github/workflows/deploy.yml`. Once you push to `main
 
 ## Data Sources & Methodology
 
-- **Base Data (Taiwan 2025):** Approximated from public demographic data. Total population ~23.3M, TFR ~0.86, default net migration ~20,000/year. Age buckets: Youth (0–14) 2.68M, Working (15–64) 15.95M, Elderly (65+) 4.67M.
-- **Mortality Rates:** Approximated for modern life expectancy (~81 years).
-- **Births:** Calculated from women aged 15–49 (≈50% of that cohort) and annual TFR divided across 35 reproductive years.
-- **Migration:** Distributed across working-age cohorts (20–34).
-- **Conceptual Framework:** Dependency ratio thresholds based on concepts from Max Fisher's video essay *[How China blew up its own future](https://www.youtube.com/watch?v=AultJcNb90c)*.
+All population figures are 2025 estimates (medium variant where applicable).
+
+| Source | Coverage |
+|---|---|
+| **[UN World Population Prospects 2024](https://population.un.org/wpp/)** | All countries — primary reference |
+| **[Taiwan MOHW](https://www.mohw.gov.tw/)** + National Development Council Projections 2022–2070 | Taiwan |
+| **[US Census Bureau IDB 2024](https://www.census.gov/programs-surveys/international-programs/about/idb.html)** + CDC NCHS (TFR 2023: 1.616) | United States |
+| **[Statistics Canada](https://www.statcan.gc.ca/)** Cat. 91-520-X | Canada |
+| **[Statistics Bureau of Japan](https://www.stat.go.jp/)** 2024 + MHLW Vital Statistics (TFR 2023: 1.20) | Japan |
+| **[Statistics Korea (KOSIS)](https://kosis.kr/)** 2024 (TFR 2023: 0.72 — record low) | South Korea |
+| **[NBS China](https://www.stats.gov.cn/)** Statistical Yearbook 2024 (TFR 2023: 1.09) | China |
+| **[Destatis](https://www.destatis.de/)** Bevölkerungsvorausberechnung 2024 (TFR 2023: 1.35) | Germany |
+| **UN WPP 2024** + World Bank WDI 2024 | Niger, Mali |
+
+### Simulation Methodology
+
+- **Mortality:** Two profiles — *developed* (life expectancy ~80–84 yrs) and *high-fertility* (LE ~62 yrs, infant mortality ~50/1000). Approximated from WHO/UN age-specific death rates.
+- **Births:** Women aged 15–49 (≈50% of that cohort) × (TFR ÷ 35 reproductive years) = annual births.
+- **Migration:** Distributed evenly across working-age cohorts (ages 20–34). Negative values model net emigration.
+- **Conceptual Framework:** Dependency ratio thresholds based on concepts from Max Fisher's *[How China blew up its own future](https://www.youtube.com/watch?v=AultJcNb90c)*.
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome. If you are a demographer or data scientist and want to contribute more accurate Age-Specific Fertility Rates (ASFR) or dynamic mortality curves, please open a Pull Request.
+Contributions, issues, and feature requests are welcome. If you are a demographer or data scientist and want to contribute more accurate Age-Specific Fertility Rates (ASFR), dynamic mortality curves, or additional countries, please open a Pull Request.
 
 ## License
 
