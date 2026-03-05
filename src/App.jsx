@@ -906,11 +906,11 @@ export default function App() {
                         {/* Links */}
                         <div className="flex justify-center">
                             <div className="text-xs text-slate-400 dark:text-slate-600 flex gap-4 flex-wrap justify-center">
-                                <a href="https://lawrencehwang.github.io/taiwan-demographics/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
+                                <a href="https://lawrencehwang.github.io/global-demographics/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
                                     {lang === 'en' ? 'Live Demo' : lang === 'zh' ? '線上演示' : lang === 'ko' ? '라이브 데모' : 'ライブデモ'}
                                 </a>
                                 <span>·</span>
-                                <a href="https://github.com/LawrenceHwang/taiwan-demographics" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
+                                <a href="https://github.com/LawrenceHwang/global-demographics" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
                                     GitHub
                                 </a>
                             </div>
