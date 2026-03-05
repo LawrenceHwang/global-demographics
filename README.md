@@ -4,6 +4,8 @@
 
 An interactive React SPA that models Taiwan's population trajectory from **2025 to 2100**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
 
+**[→ Live Demo](https://lawrencehwang.github.io/taiwan-demographics/)**
+
 > **AI Collaboration Note:** This project was co-created with Gemini (Google) and [Claude](https://claude.ai) (Anthropic).
 
 ---
@@ -42,7 +44,7 @@ Requires **Node.js 18+**.
 
 ```bash
 # Clone
-git clone https://github.com/your-username/taiwan-demographics.git
+git clone https://github.com/LawrenceHwang/taiwan-demographics.git
 cd taiwan-demographics
 
 # Install

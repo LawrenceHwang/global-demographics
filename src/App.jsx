@@ -696,6 +696,19 @@ export default function App() {
                     </div>
 
                 </div>
+
+                {/* Footer */}
+                <div className="max-w-7xl w-full mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-center">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 flex gap-4 flex-wrap justify-center">
+                        <a href="https://lawrencehwang.github.io/taiwan-demographics/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
+                            {lang === 'en' ? 'Live Demo' : lang === 'zh' ? '線上演示' : lang === 'ko' ? '라이브 데모' : 'ライブデモ'}
+                        </a>
+                        <span>•</span>
+                        <a href="https://github.com/LawrenceHwang/taiwan-demographics" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors underline">
+                            {lang === 'en' ? 'GitHub Repository' : lang === 'zh' ? 'GitHub 儲存庫' : lang === 'ko' ? 'GitHub 저장소' : 'GitHub リポジトリ'}
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     );

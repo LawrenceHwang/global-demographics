@@ -4,6 +4,8 @@
 
 一個互動式 React 單頁應用程式，模擬台灣從 **2025 年至 2100 年**的人口變遷軌跡。調整總和生育率（TFR）與淨移民人數，探索不同政策選擇如何影響一個國家的撫養比與經濟未來。
 
+**[→ 部署網頁](https://lawrencehwang.github.io/taiwan-demographics/)**
+
 > **AI 協作說明：** 本專案由 Gemini（Google）與 [Claude](https://claude.ai)（Anthropic）共同協作完成。
 
 ---
@@ -42,7 +44,7 @@
 
 ```bash
 # 複製專案
-git clone https://github.com/your-username/taiwan-demographics.git
+git clone https://github.com/LawrenceHwang/taiwan-demographics.git
 cd taiwan-demographics
 
 # 安裝套件
