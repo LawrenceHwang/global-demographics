@@ -1,8 +1,10 @@
 # Taiwan Demographics Simulation Engine
 
+**Languages:** English | [繁體中文](README.zh-TW.md)
+
 An interactive React SPA that models Taiwan's population trajectory from **2025 to 2100**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
 
-> **AI Collaboration Note:** This project was co-created with [Claude](https://claude.ai) (Anthropic).
+> **AI Collaboration Note:** This project was co-created with Gemini (Google) and [Claude](https://claude.ai) (Anthropic).
 
 ---
 
@@ -82,7 +84,7 @@ A workflow is included at `.github/workflows/deploy.yml`. Once you push to `main
 
 ## Contributing
 
-Contributions, issues, and feature requests are welcome. If you are a demographer or data scientist and want to contribute more accurate age-specific fertility rates or dynamic mortality curves, please open a Pull Request.
+Contributions, issues, and feature requests are welcome. If you are a demographer or data scientist and want to contribute more accurate Age-Specific Fertility Rates (ASFR) or dynamic mortality curves, please open a Pull Request.
 
 ## License
 
