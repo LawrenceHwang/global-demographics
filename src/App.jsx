@@ -764,7 +764,7 @@ export default function App() {
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
                                     <h2 className="text-base font-bold">{t('trajTitle')}</h2>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('trajSub')}</p>
-                                    <svg viewBox="-46 -5 848 335" className="w-full h-auto" aria-label={t('trajTitle')}>
+                                    <svg viewBox="-50 -10 870 350" className="w-full h-auto overflow-visible" aria-label={t('trajTitle')}>
                                         <rect x="0" y={(150 - 50) * 2.5} width={CHART_W} height={50 * 2.5} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity="0.35" />
                                         <rect x="0" y={(150 - 65) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#78350f" : "#fef9c3"} opacity="0.35" />
                                         <rect x="0" y={(150 - 80) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#7c2d12" : "#fed7aa"} opacity="0.35" />

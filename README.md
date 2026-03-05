@@ -2,7 +2,7 @@
 
 **Languages:** English | [繁體中文](README.zh-TW.md)
 
-An interactive React SPA that models population trajectories from **2025 to 2100** for **9 countries and regions**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
+An interactive React SPA that models population trajectories from **2025 to 2175** for **9 countries and regions**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
 
 **[→ Live Demo](https://lawrencehwang.github.io/global-demographics/)**
 
