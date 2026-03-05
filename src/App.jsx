@@ -446,6 +446,30 @@ export default function App() {
     const yAxisStepM = (yAxisMax / 1e6) / 5;
     const yAxisLabels = [1, 2, 3, 4, 5].map(i => yAxisStepM * i);
 
+    const maxDepRatio = useMemo(() => {
+        if (!history.length) return 80;
+        // Find the max dependency ratio from the simulation history
+        return Math.max(...history.map(h => h.depRatio));
+    }, [history]);
+
+    const depRatioChartTop = useMemo(() => {
+        // Add a 15% padding to the max value, ensuring a minimum ceiling of 80
+        const paddedMax = Math.max(80, maxDepRatio * 1.15);
+        // Snap to the next multiple of 20 for a clean, readable axis
+        return Math.ceil(paddedMax / 20) * 20;
+    }, [maxDepRatio]);
+
+    const depRatioYLabels = useMemo(() => {
+        if (depRatioChartTop === 0) return [];
+        // Create 4 evenly spaced labels for the Y axis
+        const numSteps = 4;
+        const step = depRatioChartTop / numSteps;
+        return Array.from({ length: numSteps }, (_, i) => Math.round(step * (i + 1)));
+    }, [depRatioChartTop]);
+
+    const TRAJ_CHART_H = 300; // Fixed SVG height for the trajectory chart area
+    const trajScaleY = TRAJ_CHART_H / depRatioChartTop;
+
     const totalInit = cfg.youth + cfg.working + cfg.elderly;
 
     useEffect(() => {
@@ -765,12 +789,15 @@ export default function App() {
                                     <h2 className="text-base font-bold">{t('trajTitle')}</h2>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('trajSub')}</p>
                                     <svg viewBox="-50 -10 870 350" className="w-full h-auto overflow-visible" aria-label={t('trajTitle')}>
-                                        <rect x="0" y={(150 - 50) * 2.5} width={CHART_W} height={50 * 2.5} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity="0.35" />
-                                        <rect x="0" y={(150 - 65) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#78350f" : "#fef9c3"} opacity="0.35" />
-                                        <rect x="0" y={(150 - 80) * 2.5} width={CHART_W} height={15 * 2.5} fill={theme === 'dark' ? "#7c2d12" : "#fed7aa"} opacity="0.35" />
-                                        <rect x="0" y={0} width={CHART_W} height={70 * 2.5} fill={theme === 'dark' ? "#7f1d1d" : "#fecaca"} opacity="0.35" />
-                                        {[50, 65, 80, 100, 130].map(val => {
-                                            const y = (150 - val) * 2.5;
+                                        {/* Background threshold zones */}
+                                        <rect x="0" y={(depRatioChartTop - 50) * trajScaleY} width={CHART_W} height={50 * trajScaleY} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity="0.35" />
+                                        <rect x="0" y={(depRatioChartTop - 65) * trajScaleY} width={CHART_W} height={15 * trajScaleY} fill={theme === 'dark' ? "#78350f" : "#fef9c3"} opacity="0.35" />
+                                        <rect x="0" y={(depRatioChartTop - 80) * trajScaleY} width={CHART_W} height={15 * trajScaleY} fill={theme === 'dark' ? "#7c2d12" : "#fed7aa"} opacity="0.35" />
+                                        <rect x="0" y="0" width={CHART_W} height={(depRatioChartTop - 80) * trajScaleY} fill={theme === 'dark' ? "#7f1d1d" : "#fecaca"} opacity="0.35" />
+
+                                        {/* Y-axis labels and grid lines */}
+                                        {depRatioYLabels.map(val => {
+                                            const y = (depRatioChartTop - val) * trajScaleY;
                                             return (
                                                 <g key={val}>
                                                     <line x1="0" y1={y} x2={CHART_W} y2={y} stroke={theme === 'dark' ? '#334155' : '#e2e8f0'} strokeWidth="1.5" strokeDasharray="5 4" />
@@ -778,21 +805,28 @@ export default function App() {
                                                 </g>
                                             );
                                         })}
+
+                                        {/* Data path (filled area) */}
                                         <path
                                             d={[
-                                                ...history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(150 - Math.min(150, h.depRatio)) * 2.5}`),
-                                                `L ${CHART_W} 300`, 'L 0 300', 'Z'
+                                                ...history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(depRatioChartTop - Math.min(depRatioChartTop, h.depRatio)) * trajScaleY}`),
+                                                `L ${CHART_W} ${TRAJ_CHART_H}`, `L 0 ${TRAJ_CHART_H}`, 'Z'
                                             ].join(' ')}
                                             fill={theme === 'dark' ? 'rgba(99,102,241,0.08)' : 'rgba(99,102,241,0.06)'}
                                         />
+                                        {/* Data path (stroke) */}
                                         <path
-                                            d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(150 - Math.min(150, h.depRatio)) * 2.5}`).join(' ')}
+                                            d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(depRatioChartTop - Math.min(depRatioChartTop, h.depRatio)) * trajScaleY}`).join(' ')}
                                             fill="none" stroke={theme === 'dark' ? '#e2e8f0' : '#334155'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                                         />
-                                        <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2="310" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
-                                        <circle cx={xPos(currentYear)} cy={(150 - Math.min(150, currentData.depRatio)) * 2.5} r="5" fill="#6366f1" stroke={theme === 'dark' ? '#0f172a' : 'white'} strokeWidth="2.5" />
+
+                                        {/* Current year indicator */}
+                                        <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2={TRAJ_CHART_H + 10} stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
+                                        <circle cx={xPos(currentYear)} cy={(depRatioChartTop - Math.min(depRatioChartTop, currentData.depRatio)) * trajScaleY} r="5" fill="#6366f1" stroke={theme === 'dark' ? '#0f172a' : 'white'} strokeWidth="2.5" />
+
+                                        {/* X-axis labels */}
                                         {[2025, 2050, 2075, 2175].map((yr, i) => (
-                                            <text key={yr} x={xPos(yr)} y="322" fontSize="20" fill={theme === 'dark' ? '#94a3b8' : '#475569'} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
+                                            <text key={yr} x={xPos(yr)} y={TRAJ_CHART_H + 22} fontSize="20" fill={theme === 'dark' ? '#94a3b8' : '#475569'} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
                                         ))}
                                     </svg>
                                 </div>
