@@ -156,7 +156,7 @@ const runSimulation = (basePop, mortality, tfr, netMigration, isDynamicTfr, term
     const history = [];
     const popByYear = [];
 
-    for (let year = 2025; year <= 2175; year++) {
+    for (let year = 2025; year <= 2125; year++) {
         let youth = 0, working = 0, elderly = 0;
         for (let i = 0; i <= 100; i++) {
             if (i <= 14) youth += currentPop[i];
@@ -247,7 +247,7 @@ const DATA_SOURCES = [
 const translations = {
     en: {
         title: "Global Demographics",
-        subtitle: "Simulation Engine (2025 - 2175)",
+        subtitle: "Simulation Engine (2025 - 2125)",
         simYear: "Simulation Year",
         play: "Play", pause: "Pause",
         fixedTfr: "Fixed TFR", dynamicTfr: "Dynamic Target",
@@ -266,7 +266,7 @@ const translations = {
         depRatio: "Dependency Ratio", workforceSize: "Workforce Size",
         supports: "Supports {num} dependents",
         trajTitle: "Dependency Ratio Trajectory",
-        trajSub: "Dependents per 100 working-age adults (2025 - 2175)",
+        trajSub: "Dependents per 100 working-age adults (2025 - 2125)",
         pyrTitle: "Demographic Pyramid", pyrSub: "Population distribution by age ({year})",
         compTitle: "Population Composition Over Time",
         compSub: "Total numbers for each demographic bucket",
@@ -288,7 +288,7 @@ const translations = {
     },
     zh: {
         title: "全球人口統計",
-        subtitle: "模擬引擎 (2025 - 2175)",
+        subtitle: "模擬引擎 (2025 - 2125)",
         simYear: "模擬年份", play: "播放", pause: "暫停",
         fixedTfr: "固定生育率", dynamicTfr: "動態目標",
         startingTfr: "起始生育率 (2025)", tfr: "總和生育率 (TFR)",
@@ -305,7 +305,7 @@ const translations = {
         totalPop: "總人口", startingAt: "2025年起始為 {pop}",
         depRatio: "撫養比", workforceSize: "勞動力規模",
         supports: "撫養 {num} 名受撫養者",
-        trajTitle: "撫養比軌跡", trajSub: "每 100 名勞動年齡成人的受撫養人數 (2025 - 2175)",
+        trajTitle: "撫養比軌跡", trajSub: "每 100 名勞動年齡成人的受撫養人數 (2025 - 2125)",
         pyrTitle: "人口金字塔", pyrSub: "按年齡劃分的人口分佈 ({year})",
         compTitle: "人口組成隨時間變化", compSub: "每個年齡段的總人數",
         youth: "青年 (0-14)", working: "勞動 (15-64)", elderly: "老年 (65+)", total: "總計",
@@ -324,7 +324,7 @@ const translations = {
     },
     ko: {
         title: "글로벌 인구 통계",
-        subtitle: "시뮬레이션 엔진 (2025 - 2175)",
+        subtitle: "시뮬레이션 엔진 (2025 - 2125)",
         simYear: "시뮬레이션 연도", play: "재생", pause: "일시정지",
         fixedTfr: "고정 출산율", dynamicTfr: "동적 목표",
         startingTfr: "시작 출산율 (2025)", tfr: "합계출산율 (TFR)",
@@ -340,7 +340,7 @@ const translations = {
         totalPop: "총 인구", startingAt: "2025년 {pop} 시작",
         depRatio: "부양비", workforceSize: "노동력 규모",
         supports: "{num} 피부양자 지원",
-        trajTitle: "부양비 궤적", trajSub: "생산가능인구 100명당 피부양자 수 (2025 - 2175)",
+        trajTitle: "부양비 궤적", trajSub: "생산가능인구 100명당 피부양자 수 (2025 - 2125)",
         pyrTitle: "인구 피라미드", pyrSub: "연령별 인구 분포 ({year})",
         compTitle: "시간에 따른 인구 구성", compSub: "각 인구 통계 버킷의 총 수",
         youth: "유소년 (0-14)", working: "노동 (15-64)", elderly: "노인 (65+)", total: "총계",
@@ -359,7 +359,7 @@ const translations = {
     },
     ja: {
         title: "グローバル人口動態",
-        subtitle: "シミュレーションエンジン (2025 - 2175)",
+        subtitle: "シミュレーションエンジン (2025 - 2125)",
         simYear: "シミュレーション年", play: "再生", pause: "一時停止",
         fixedTfr: "固定出生率", dynamicTfr: "動的ターゲット",
         startingTfr: "開始出生率 (2025)", tfr: "合計特殊出生率 (TFR)",
@@ -375,7 +375,7 @@ const translations = {
         totalPop: "総人口", startingAt: "2025年に{pop}から開始",
         depRatio: "従属人口指数", workforceSize: "労働力規模",
         supports: "{num}の従属人口を支援",
-        trajTitle: "従属人口指数の軌跡", trajSub: "生産年齢人口100人あたりの従属人口 (2025 - 2175)",
+        trajTitle: "従属人口指数の軌跡", trajSub: "生産年齢人口100人あたりの従属人口 (2025 - 2125)",
         pyrTitle: "人口ピラミッド", pyrSub: "年齢別の人口分布 ({year})",
         compTitle: "経時的な人口構成", compSub: "各人口動態バケットの総数",
         youth: "若者 (0-14)", working: "労働 (15-64)", elderly: "高齢者 (65+)", total: "合計",
@@ -398,7 +398,7 @@ const translations = {
 // APP COMPONENT
 // =============================================================================
 export default function App() {
-    const [theme, setTheme] = useState('dark');
+    const [theme, setTheme] = useState('light');
     const [lang, setLang] = useState('en');
     const [country, setCountry] = useState('taiwan');
 
@@ -467,7 +467,7 @@ export default function App() {
         return Array.from({ length: numSteps }, (_, i) => Math.round(step * (i + 1)));
     }, [depRatioChartTop]);
 
-    const TRAJ_CHART_H = 300; // Fixed SVG height for the trajectory chart area
+    const TRAJ_CHART_H = 420; // Fixed SVG height for the trajectory chart area
     const trajScaleY = TRAJ_CHART_H / depRatioChartTop;
 
     const totalInit = cfg.youth + cfg.working + cfg.elderly;
@@ -477,7 +477,7 @@ export default function App() {
         if (isPlaying) {
             interval = setInterval(() => {
                 setCurrentYear(y => {
-                    if (y >= 2175) { setIsPlaying(false); return 2175; }
+                    if (y >= 2125) { setIsPlaying(false); return 2125; }
                     return y + 1;
                 });
             }, 100);
@@ -496,7 +496,7 @@ export default function App() {
     const status = getDependencyStatus(currentData.depRatio);
 
     const CHART_W = 760;
-    const xPos = (year) => ((year - 2025) / 150) * CHART_W;
+    const xPos = (year) => ((year - 2025) / 100) * CHART_W;
 
     return (
         <div className={`${theme === 'dark' ? 'dark' : ''}`}>
@@ -606,7 +606,7 @@ export default function App() {
                             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{t('simYear')}</p>
                                 <input
-                                    type="range" min="2025" max="2175" value={currentYear}
+                                    type="range" min="2025" max="2125" value={currentYear}
                                     onChange={(e) => { setCurrentYear(parseInt(e.target.value)); setIsPlaying(false); }}
                                     className="w-full accent-indigo-600 dark:accent-indigo-400 mb-3"
                                 />
@@ -671,7 +671,7 @@ export default function App() {
                                                     <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{terminalYear}</span>
                                                 </div>
                                                 <input
-                                                    type="range" min="2030" max="2175" step="1" value={terminalYear}
+                                                    type="range" min="2030" max="2125" step="1" value={terminalYear}
                                                     onChange={(e) => setTerminalYear(parseInt(e.target.value))}
                                                     className="w-full accent-indigo-600 dark:accent-indigo-400"
                                                 />
@@ -788,7 +788,7 @@ export default function App() {
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
                                     <h2 className="text-base font-bold">{t('trajTitle')}</h2>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('trajSub')}</p>
-                                    <svg viewBox="-50 -10 870 350" className="w-full h-auto overflow-visible" aria-label={t('trajTitle')}>
+                                    <svg viewBox="-50 -10 870 470" className="w-full h-auto overflow-visible" aria-label={t('trajTitle')}>
                                         {/* Background threshold zones */}
                                         <rect x="0" y={(depRatioChartTop - 50) * trajScaleY} width={CHART_W} height={50 * trajScaleY} fill={theme === 'dark' ? "#064e3b" : "#dcfce7"} opacity="0.35" />
                                         <rect x="0" y={(depRatioChartTop - 65) * trajScaleY} width={CHART_W} height={15 * trajScaleY} fill={theme === 'dark' ? "#78350f" : "#fef9c3"} opacity="0.35" />
@@ -825,7 +825,7 @@ export default function App() {
                                         <circle cx={xPos(currentYear)} cy={(depRatioChartTop - Math.min(depRatioChartTop, currentData.depRatio)) * trajScaleY} r="5" fill="#6366f1" stroke={theme === 'dark' ? '#0f172a' : 'white'} strokeWidth="2.5" />
 
                                         {/* X-axis labels */}
-                                        {[2025, 2050, 2075, 2175].map((yr, i) => (
+                                        {[2025, 2050, 2075, 2125].map((yr, i) => (
                                             <text key={yr} x={xPos(yr)} y={TRAJ_CHART_H + 22} fontSize="20" fill={theme === 'dark' ? '#94a3b8' : '#475569'} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
                                         ))}
                                     </svg>
@@ -918,7 +918,7 @@ export default function App() {
                                     <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2="200" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7" />
                                 </svg>
                                 <div className="flex justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-600 mt-1">
-                                    <span>2025</span><span>2050</span><span>2075</span><span>2175</span>
+                                    <span>2025</span><span>2050</span><span>2075</span><span>2125</span>
                                 </div>
                                 <div className="flex flex-wrap gap-4 justify-center mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">
                                     <div className="flex items-center gap-1.5">
