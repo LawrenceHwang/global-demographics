@@ -2,7 +2,7 @@
 
 **語言：** [English](README.md) | 繁體中文
 
-一個互動式 React 單頁應用程式，模擬 **9 個國家與地區**從 **2025 年至 2175 年**的人口變遷軌跡。調整總和生育率（TFR）與淨移民人數，探索不同政策選擇如何影響撫養比與經濟未來。
+一個互動式 React 單頁應用程式，模擬 **9 個國家與地區**從 **2025 年至 2125 年**的人口變遷軌跡。調整總和生育率（TFR）與淨移民人數，探索不同政策選擇如何影響撫養比與經濟未來。
 
 **[→ 部署網頁](https://lawrencehwang.github.io/global-demographics/)**
 
@@ -46,11 +46,12 @@
 - **即時世代模擬** — 逐年迭代 101 個年齡組，套用死亡率、生育率與移民率
 - **固定 vs. 動態生育率情境** — 測試固定生育率，或透過線性插值設定「最終目標生育率」
 - **互動式儀表板：**
-  - 含彩色閾值區間的撫養比軌跡折線圖
-  - 即時人口金字塔（觀看它如何倒置，或對尼日爾／馬利而言如何持續擴底）
-  - 各人口組成隨時間的絕對數量變化圖（Y 軸自動縮放）
+  - 含彩色閾值區間的撫養比軌跡折線圖（含懸停提示）
+  - 年齡分佈圖（按年齡層色彩標記，含懸停提示）
+  - 各人口組成隨時間的絕對數量變化圖（Y 軸自動縮放，含懸停提示）
 - **引用資料來源** — 頁腳可展開，列出每個國家的資料來源
-- **多語系（i18n）** — 完整翻譯：English、繁體中文、한국어、日本語
+- **多語系（i18n）** — 完整翻譯：English、繁體中文、한국어、日本語（含本地化數字格式）
+- **無障礙設計** — 語意化標籤、所有控制項 ARIA 標註、圖表可讀性描述
 - **淺色 / 深色主題** 切換
 
 ## 技術堆疊
@@ -62,7 +63,35 @@
 | 樣式 | Tailwind CSS 3 |
 | 圖示 | Lucide React |
 | 圖表 | 手刻 SVG（零外部圖表套件依賴） |
+| 測試 | Vitest |
 | 部署 | GitHub Pages（`gh-pages` 套件或 GitHub Actions） |
+
+## 架構
+
+程式碼採用模組化元件架構：
+
+```
+src/
+├── App.jsx                 # 精簡的協調層（約 80 行）
+├── data/                   # 常數、國家設定、死亡率分佈、資料來源
+├── engine/                 # 純函式模擬引擎 + 單元測試
+├── utils/                  # 格式化工具 + 單元測試
+├── i18n/                   # 各語言翻譯檔案 + useTranslation hook
+├── hooks/                  # 自訂 hooks（useSimulation, usePlayback, useTheme）
+└── components/             # UI 元件 + charts/
+```
+
+## 測試
+
+```bash
+# 執行所有測試
+npm test
+
+# 監看模式
+npm run test:watch
+```
+
+單元測試涵蓋模擬引擎（人口建構、確定性、參數敏感度、邊界條件）與格式化工具。
 
 ## 快速開始
 
@@ -71,7 +100,7 @@
 ```bash
 # 複製專案
 git clone https://github.com/LawrenceHwang/global-demographics.git
-cd taiwan-demographics
+cd global-demographics
 
 # 安裝套件
 npm install
@@ -93,7 +122,7 @@ npm run deploy
 此指令會執行 `vite build`，並將 `dist/` 資料夾推送至 `gh-pages` 分支，完成後發佈於：
 
 ```text
-https://<your-username>.github.io/taiwan-demographics/
+https://<your-username>.github.io/global-demographics/
 ```
 
 ### 方法 B — GitHub Actions（推送後自動部署）
@@ -128,6 +157,14 @@ https://<your-username>.github.io/taiwan-demographics/
 ## 貢獻
 
 歡迎提交 Issues 與 Pull Requests。若您是人口學家或資料科學家，歡迎貢獻更精確的年齡別生育率、動態死亡率曲線，或新增更多國家。
+
+### 已知簡化
+
+- **固定性別比（50%）** — 未模擬性別比失衡
+- **均勻 TFR ÷ 35** — 使用年度固定出生率，未採用年齡別生育率（ASFR）
+- **靜態死亡率** — 死亡率曲線不隨時間改善
+- **兩種死亡率分佈** — 僅「已開發國家」與「高生育率國家」（無中間分佈）
+- **移民僅分配至 20–34 歲** — 實際移民年齡分佈更廣
 
 ## 授權
 

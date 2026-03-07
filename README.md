@@ -2,7 +2,7 @@
 
 **Languages:** English | [繁體中文](README.zh-TW.md)
 
-An interactive React SPA that models population trajectories from **2025 to 2175** for **9 countries and regions**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
+An interactive React SPA that models population trajectories from **2025 to 2125** for **9 countries and regions**. Adjust the Total Fertility Rate (TFR) and Net Migration to explore how policy decisions shape a nation's dependency ratio and economic future.
 
 **[→ Live Demo](https://lawrencehwang.github.io/global-demographics/)**
 
@@ -45,11 +45,12 @@ Each country ships with:
 - **Real-time Cohort Simulation** — Iterates 101 age cohorts year-by-year, applying mortality, fertility, and migration rates
 - **Fixed vs. Dynamic TFR Scenarios** — Test a constant rate or model a gradual cultural/policy shift with a linearly interpolated "Terminal Target TFR"
 - **Interactive Dashboards:**
-  - Dependency ratio trajectory with colored threshold zones
-  - Real-time demographic pyramid (watch it flip upside-down — or grow ever wider for Niger/Mali)
-  - Absolute population composition over time (Youth / Working / Elderly / Total) with auto-scaled Y-axis
+  - Dependency ratio trajectory with colored threshold zones and hover tooltips
+  - Age distribution chart with color-coded age bands and hover tooltips
+  - Absolute population composition over time (Youth / Working / Elderly / Total) with auto-scaled Y-axis and hover tooltips
 - **Cited Data Sources** — Collapsible footer lists every primary source per country
-- **i18n** — Fully translated: English, 繁體中文, 한국어, 日本語
+- **i18n** — Fully translated: English, 繁體中文, 한국어, 日本語 with locale-aware number formatting
+- **Accessibility** — Semantic landmarks, ARIA labels on all controls, accessible chart descriptions, screen-reader-friendly language switching
 - **Light / Dark mode**
 
 ## Tech Stack
@@ -61,7 +62,35 @@ Each country ships with:
 | Styling | Tailwind CSS 3 |
 | Icons | Lucide React |
 | Charts | Hand-coded inline SVG (zero charting dependencies) |
+| Testing | Vitest |
 | Deploy | GitHub Pages via `gh-pages` or GitHub Actions |
+
+## Architecture
+
+The codebase follows a modular component architecture:
+
+```
+src/
+├── App.jsx                 # Thin orchestrator (~80 lines)
+├── data/                   # Constants, country configs, mortality profiles, sources
+├── engine/                 # Pure simulation functions + unit tests
+├── utils/                  # Formatting utilities + unit tests
+├── i18n/                   # Per-language translation files + useTranslation hook
+├── hooks/                  # Custom hooks (useSimulation, usePlayback, useTheme)
+└── components/             # UI components + charts/
+```
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+```
+
+Unit tests cover the simulation engine (population construction, determinism, parameter sensitivity, boundary conditions) and formatting utilities.
 
 ## Getting Started
 
@@ -70,7 +99,7 @@ Requires **Node.js 18+**.
 ```bash
 # Clone
 git clone https://github.com/LawrenceHwang/global-demographics.git
-cd taiwan-demographics
+cd global-demographics
 
 # Install
 npm install
@@ -92,7 +121,7 @@ npm run deploy
 This runs `vite build` then pushes the `dist/` folder to the `gh-pages` branch. Your app will be live at:
 
 ```
-https://<your-username>.github.io/taiwan-demographics/
+https://<your-username>.github.io/global-demographics/
 ```
 
 ### Option B — GitHub Actions (automatic on push)
@@ -127,6 +156,14 @@ All population figures are 2025 estimates (medium variant where applicable).
 ## Contributing
 
 Contributions, issues, and feature requests are welcome. If you are a demographer or data scientist and want to contribute more accurate Age-Specific Fertility Rates (ASFR), dynamic mortality curves, or additional countries, please open a Pull Request.
+
+### Known Simplifications
+
+- **Flat gender ratio (50%)** — Does not model sex-specific imbalances
+- **Uniform TFR ÷ 35** — Uses a flat annual birth rate instead of Age-Specific Fertility Rates (ASFR)
+- **Static mortality** — Mortality profiles do not improve over time
+- **Two mortality profiles** — "Developed" and "high-fertility" (no intermediate profile)
+- **Migration only to ages 20–34** — Real migration has a wider age distribution
 
 ## License
 
