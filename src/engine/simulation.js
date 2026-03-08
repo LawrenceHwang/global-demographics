@@ -39,16 +39,18 @@ export function buildCountryPopulation({ anchors, youth: tY, working: tW, elderl
 }
 
 /**
- * Validate mortality profile entries are within [0, 1].
- * Logs a warning and clamps out-of-range values.
+ * Return a validated mortality copy constrained to [0, 1].
+ * This function is intentionally non-mutating to avoid leaking state
+ * into shared mortality fixtures.
  */
-export function validateMortality(mortality) {
-    for (let i = 0; i < mortality.length; i++) {
-        if (mortality[i] < 0 || mortality[i] > 1) {
-            console.warn(`Mortality rate out of range at age ${i}: ${mortality[i]} (clamped to [0,1])`);
-            mortality[i] = Math.max(0, Math.min(1, mortality[i]));
+export function sanitizeMortality(mortality) {
+    return mortality.map((rate, age) => {
+        if (rate < 0 || rate > 1) {
+            console.warn(`Mortality rate out of range at age ${age}: ${rate} (clamped to [0,1])`);
+            return Math.max(0, Math.min(1, rate));
         }
-    }
+        return rate;
+    });
 }
 
 /**
@@ -64,7 +66,7 @@ export function validateMortality(mortality) {
  * @returns {{ history: object[], popByYear: number[][] }}
  */
 export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTfr, terminalTfr, terminalYear) {
-    validateMortality(mortality);
+    const safeMortality = sanitizeMortality(mortality);
 
     let currentPop = [...basePop];
     const history = [];
@@ -79,7 +81,8 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
         }
         const total = youth + working + elderly;
         const depRatio = working > 0 ? ((youth + elderly) / working) * 100 : 0;
-        history.push({ year, total, youth, working, elderly, depRatio });
+        const yearRecord = { year, total, youth, working, elderly, depRatio };
+        history.push(yearRecord);
         popByYear.push([...currentPop]);
 
         // Calculate women of reproductive age
@@ -108,14 +111,15 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
 
         // Age each cohort by one year, applying mortality
         for (let i = 1; i <= MAX_AGE; i++) {
-            nextPop[i] = currentPop[i - 1] * (1 - mortality[i - 1]);
+            nextPop[i] = currentPop[i - 1] * (1 - safeMortality[i - 1]);
         }
         // Accumulate survivors at max age (prevents population from "falling off")
-        nextPop[MAX_AGE] += currentPop[MAX_AGE] * (1 - mortality[MAX_AGE]);
+        nextPop[MAX_AGE] += currentPop[MAX_AGE] * (1 - safeMortality[MAX_AGE]);
 
         // Distribute migration across working-age adults, conserving total.
         // For emigration (negative), iteratively redistribute shortfalls from
         // bins that lack capacity across remaining bins.
+        let migrationApplied = 0;
         if (netMigration !== 0) {
             let remaining = netMigration;
             const eligible = [];
@@ -142,6 +146,7 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
                 }
 
                 remaining -= applied;
+                migrationApplied += applied;
 
                 // If no progress was made (all bins exhausted), stop
                 if (nextEligible.length === eligible.length || nextEligible.length === 0) break;
@@ -156,6 +161,10 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
                 );
             }
         }
+
+        yearRecord.migrationRequested = netMigration;
+        yearRecord.migrationApplied = migrationApplied;
+        yearRecord.migrationShortfall = netMigration - migrationApplied;
 
         currentPop = nextPop;
     }

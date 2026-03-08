@@ -75,7 +75,7 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
             <svg
                 viewBox="0 -10 440 315"
                 className="w-full h-auto"
-                role="img"
+                role="group"
                 aria-label={t('pyrTitle')}
                 onMouseLeave={hideTooltip}
             >
@@ -93,7 +93,7 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
                     return (
                         <g
                             key={idx}
-                            role="listitem"
+                            role="button"
                             tabIndex={0}
                             aria-label={`Age ${label}: ${formatNum(total)}`}
                             onMouseEnter={() => showTooltip({ startAge, total }, idx)}

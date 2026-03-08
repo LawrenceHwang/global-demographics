@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { CHART_W, SIM_START_YEAR, SIM_YEAR_SPAN } from '../../data/constants';
 import { computeYAxisMax, formatPop, formatYLabel } from '../../utils/format';
+import { clientXToYear } from '../../utils/svgCoordinates';
 
 /**
  * Population Composition chart (SVG line chart).
@@ -23,10 +24,7 @@ function PopulationComposition({ history, currentYear, theme, t }) {
 
     const handleMouseMove = useCallback((e) => {
         const svg = e.currentTarget;
-        const rect = svg.getBoundingClientRect();
-        const svgX = ((e.clientX - rect.left) / rect.width) * (CHART_W + 930 / 10) - 50;
-        const yearIdx = Math.round((svgX / CHART_W) * SIM_YEAR_SPAN);
-        const year = SIM_START_YEAR + Math.max(0, Math.min(SIM_YEAR_SPAN, yearIdx));
+        const year = clientXToYear(svg, e.clientX, CHART_W, SIM_START_YEAR, SIM_YEAR_SPAN);
         const entry = history[year - SIM_START_YEAR];
         if (entry) {
             const tip = {
@@ -81,7 +79,7 @@ function PopulationComposition({ history, currentYear, theme, t }) {
             <svg
                 viewBox="-50 -5 880 220"
                 className="w-full h-auto"
-                role="img"
+                role="group"
                 aria-label={t('compTitle')}
                 tabIndex={0}
                 onMouseMove={handleMouseMove}

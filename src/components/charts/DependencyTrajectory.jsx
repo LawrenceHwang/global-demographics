@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { CHART_W, DEP_THRESHOLD_HEALTHY, DEP_THRESHOLD_SEVERE, DEP_THRESHOLD_WARNING, SIM_START_YEAR, SIM_YEAR_SPAN, TRAJ_CHART_H } from '../../data/constants';
+import { clientXToYear } from '../../utils/svgCoordinates';
 
 /**
  * Dependency Ratio Trajectory chart (SVG).
@@ -32,10 +33,7 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
 
     const handleMouseMove = useCallback((e) => {
         const svg = e.currentTarget;
-        const rect = svg.getBoundingClientRect();
-        const svgX = ((e.clientX - rect.left) / rect.width) * (CHART_W + 920 / 10) - 50;
-        const yearIdx = Math.round((svgX / CHART_W) * SIM_YEAR_SPAN);
-        const year = SIM_START_YEAR + Math.max(0, Math.min(SIM_YEAR_SPAN, yearIdx));
+        const year = clientXToYear(svg, e.clientX, CHART_W, SIM_START_YEAR, SIM_YEAR_SPAN);
         const entry = history[year - SIM_START_YEAR];
         if (entry) {
             setTooltip({ x: xPos(year), y: (depRatioChartTop - Math.min(depRatioChartTop, entry.depRatio)) * trajScaleY, year, value: entry.depRatio });
@@ -81,7 +79,7 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
             <svg
                 viewBox="-50 -10 870 470"
                 className="w-full h-auto overflow-visible"
-                role="img"
+                role="group"
                 aria-label={t('trajTitle')}
                 tabIndex={0}
                 onMouseMove={handleMouseMove}

@@ -4,6 +4,10 @@ import { COUNTRY_CONFIG } from '../data/countries';
 import { MORTALITY_PROFILES } from '../data/mortality';
 import { buildCountryPopulation, runSimulation } from '../engine/simulation';
 
+export function getClampedYearIndex(year, historyLength) {
+    return Math.max(0, Math.min(historyLength - 1, year - SIM_START_YEAR));
+}
+
 /**
  * Custom hook for simulation parameters and results.
  * Manages country selection, TFR, migration, and memoized simulation output.
@@ -48,10 +52,10 @@ export function useSimulation(resetPlayback) {
     const totalInit = cfg.youth + cfg.working + cfg.elderly;
 
     const getDataForYear = useCallback((year) => {
-        const idx = year - SIM_START_YEAR;
+        const idx = getClampedYearIndex(year, history.length);
         return {
-            data: history[idx] || history[0],
-            popArray: popByYear[idx] || popByYear[0],
+            data: history[idx],
+            popArray: popByYear[idx],
         };
     }, [history, popByYear]);
 

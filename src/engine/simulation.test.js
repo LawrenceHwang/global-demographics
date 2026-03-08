@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_AGE, MIGRATION_AGE_MAX, MIGRATION_AGE_MIN, SIM_END_YEAR, SIM_START_YEAR } from '../data/constants';
 import { COUNTRY_CONFIG } from '../data/countries';
 import { MORTALITY_PROFILES } from '../data/mortality';
-import { buildCountryPopulation, runSimulation } from './simulation';
+import { buildCountryPopulation, runSimulation, sanitizeMortality } from './simulation';
 
 describe('buildCountryPopulation', () => {
     it('returns an array of 101 elements', () => {
@@ -219,5 +219,27 @@ describe('infant mortality / birth semantics', () => {
         // In popByYear[2]: age 1 = popByYear[1][0] * (1 - mort[0]) = expectedBirths * (1 - infantMort)
         const expectedSurvivors = expectedBirths * (1 - infantMort);
         expect(Math.abs(popByYear[2][1] - expectedSurvivors)).toBeLessThan(1);
+    });
+});
+
+describe('mortality immutability', () => {
+    it('sanitizeMortality returns a new clamped array', () => {
+        const input = [0.1, -0.3, 1.2, 0.4];
+        const copy = [...input];
+        const out = sanitizeMortality(input);
+
+        expect(out).toEqual([0.1, 0, 1, 0.4]);
+        expect(input).toEqual(copy);
+        expect(out).not.toBe(input);
+    });
+
+    it('runSimulation does not mutate MORTALITY_PROFILES fixtures', () => {
+        const cfg = COUNTRY_CONFIG.taiwan;
+        const basePop = buildCountryPopulation(cfg);
+        const before = [...MORTALITY_PROFILES[cfg.mortalityProfile]];
+
+        runSimulation(basePop, MORTALITY_PROFILES[cfg.mortalityProfile], cfg.tfr, cfg.migration, false, 0, 0);
+
+        expect(MORTALITY_PROFILES[cfg.mortalityProfile]).toEqual(before);
     });
 });
