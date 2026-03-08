@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
+import { describe, expect, it } from 'vitest';
+import { MAX_AGE, SIM_END_YEAR, SIM_START_YEAR } from '../../data/constants';
 import DemographicPyramid from './DemographicPyramid';
 import DependencyTrajectory from './DependencyTrajectory';
 import PopulationComposition from './PopulationComposition';
-import { MAX_AGE, SIM_END_YEAR, SIM_START_YEAR } from '../../data/constants';
 
 const t = (key, params = {}) => {
     const dict = {
