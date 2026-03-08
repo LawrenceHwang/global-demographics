@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { formatPop, formatPopLocale, computeYAxisMax, formatYLabel } from './format';
+import { describe, expect, it } from 'vitest';
+import { computeYAxisMax, formatPop, formatPopLocale, formatYLabel } from './format';
 
 describe('formatPop', () => {
     it('formats billions', () => {
@@ -32,6 +32,18 @@ describe('formatPopLocale', () => {
     it('formats with Chinese locale', () => {
         const result = formatPopLocale(23_300_000, 'zh');
         expect(result).toBeTruthy();
+    });
+
+    it('formats with Korean locale', () => {
+        const result = formatPopLocale(23_300_000, 'ko');
+        expect(result).toBeTruthy();
+        expect(typeof result).toBe('string');
+    });
+
+    it('formats with Japanese locale', () => {
+        const result = formatPopLocale(23_300_000, 'ja');
+        expect(result).toBeTruthy();
+        expect(typeof result).toBe('string');
     });
 
     it('handles unknown locale gracefully', () => {

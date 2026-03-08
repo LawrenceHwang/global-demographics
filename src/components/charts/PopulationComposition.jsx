@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { CHART_W, SIM_START_YEAR, SIM_YEAR_SPAN } from '../../data/constants';
-import { computeYAxisMax, formatYLabel, formatPop } from '../../utils/format';
+import { computeYAxisMax, formatPop, formatYLabel } from '../../utils/format';
 
 /**
  * Population Composition chart (SVG line chart).
@@ -8,6 +8,7 @@ import { computeYAxisMax, formatYLabel, formatPop } from '../../utils/format';
  */
 function PopulationComposition({ history, currentYear, theme, t }) {
     const [tooltip, setTooltip] = useState(null);
+    const liveRegionRef = useRef(null);
     const isDark = theme === 'dark';
 
     const xPos = useCallback((year) => ((year - SIM_START_YEAR) / SIM_YEAR_SPAN) * CHART_W, []);
@@ -28,30 +29,64 @@ function PopulationComposition({ history, currentYear, theme, t }) {
         const year = SIM_START_YEAR + Math.max(0, Math.min(SIM_YEAR_SPAN, yearIdx));
         const entry = history[year - SIM_START_YEAR];
         if (entry) {
-            setTooltip({
+            const tip = {
                 x: xPos(year),
                 year,
                 total: entry.total,
                 working: entry.working,
                 elderly: entry.elderly,
                 youth: entry.youth,
-            });
+            };
+            setTooltip(tip);
+            if (liveRegionRef.current) {
+                liveRegionRef.current.textContent = `${year}: Working ${formatPop(entry.working)}, Elderly ${formatPop(entry.elderly)}, Youth ${formatPop(entry.youth)}`;
+            }
         }
     }, [history, xPos]);
 
-    const handleMouseLeave = useCallback(() => setTooltip(null), []);
+    const handleMouseLeave = useCallback(() => {
+        setTooltip(null);
+        if (liveRegionRef.current) liveRegionRef.current.textContent = '';
+    }, []);
+
+    const handleKeyDown = useCallback((e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        setTooltip(prev => {
+            const baseYear = prev?.year ?? currentYear;
+            const nextYear = e.key === 'ArrowRight'
+                ? Math.min(SIM_START_YEAR + SIM_YEAR_SPAN, baseYear + 1)
+                : Math.max(SIM_START_YEAR, baseYear - 1);
+            const entry = history[nextYear - SIM_START_YEAR];
+            if (!entry) return prev;
+            if (liveRegionRef.current) {
+                liveRegionRef.current.textContent = `${nextYear}: Working ${formatPop(entry.working)}, Elderly ${formatPop(entry.elderly)}, Youth ${formatPop(entry.youth)}`;
+            }
+            return {
+                x: xPos(nextYear),
+                year: nextYear,
+                total: entry.total,
+                working: entry.working,
+                elderly: entry.elderly,
+                youth: entry.youth,
+            };
+        });
+    }, [history, xPos, currentYear]);
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
             <h2 className="text-base font-bold">{t('compTitle')}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('compSub')}</p>
+            <span ref={liveRegionRef} aria-live="polite" className="sr-only" />
             <svg
                 viewBox="-50 -5 880 220"
                 className="w-full h-auto"
                 role="img"
                 aria-label={t('compTitle')}
+                tabIndex={0}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
+                onKeyDown={handleKeyDown}
             >
                 <title>{t('compTitle')}</title>
                 <desc>{t('compSub')}</desc>

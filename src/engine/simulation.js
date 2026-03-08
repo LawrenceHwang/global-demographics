@@ -1,16 +1,15 @@
 import {
-    MAX_AGE,
-    SIM_START_YEAR,
-    SIM_END_YEAR,
-    REPRODUCTIVE_YEARS,
     GENDER_RATIO,
-    REPRODUCTIVE_AGE_MIN,
-    REPRODUCTIVE_AGE_MAX,
-    MIGRATION_AGE_MIN,
+    MAX_AGE,
     MIGRATION_AGE_MAX,
-    MIGRATION_BINS,
-    YOUTH_AGE_MAX,
+    MIGRATION_AGE_MIN,
+    REPRODUCTIVE_AGE_MAX,
+    REPRODUCTIVE_AGE_MIN,
+    REPRODUCTIVE_YEARS,
+    SIM_END_YEAR,
+    SIM_START_YEAR,
     WORKING_AGE_MAX,
+    YOUTH_AGE_MAX
 } from '../data/constants';
 
 /**
@@ -40,6 +39,19 @@ export function buildCountryPopulation({ anchors, youth: tY, working: tW, elderl
 }
 
 /**
+ * Validate mortality profile entries are within [0, 1].
+ * Logs a warning and clamps out-of-range values.
+ */
+export function validateMortality(mortality) {
+    for (let i = 0; i < mortality.length; i++) {
+        if (mortality[i] < 0 || mortality[i] > 1) {
+            console.warn(`Mortality rate out of range at age ${i}: ${mortality[i]} (clamped to [0,1])`);
+            mortality[i] = Math.max(0, Math.min(1, mortality[i]));
+        }
+    }
+}
+
+/**
  * Run a cohort-component demographic simulation.
  *
  * @param {number[]} basePop - Initial 101-element age distribution
@@ -52,6 +64,8 @@ export function buildCountryPopulation({ anchors, youth: tY, working: tW, elderl
  * @returns {{ history: object[], popByYear: number[][] }}
  */
 export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTfr, terminalTfr, terminalYear) {
+    validateMortality(mortality);
+
     let currentPop = [...basePop];
     const history = [];
     const popByYear = [];
@@ -86,7 +100,10 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
             }
         }
 
-        // Births: TFR is lifetime births per woman; divide by reproductive-year span for annual rate
+        // Births: TFR is lifetime births per woman; divide by reproductive-year span for annual rate.
+        // Newborns are placed at age 0 *before* first-year mortality is applied.
+        // In the next iteration, mortality[0] is applied when they age from 0 → 1,
+        // so survivors-to-age-1 = births * (1 - mortality[0]).
         nextPop[0] = women * (currentYearTfr / REPRODUCTIVE_YEARS);
 
         // Age each cohort by one year, applying mortality
@@ -96,11 +113,47 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
         // Accumulate survivors at max age (prevents population from "falling off")
         nextPop[MAX_AGE] += currentPop[MAX_AGE] * (1 - mortality[MAX_AGE]);
 
-        // Distribute migration across working-age adults
+        // Distribute migration across working-age adults, conserving total.
+        // For emigration (negative), iteratively redistribute shortfalls from
+        // bins that lack capacity across remaining bins.
         if (netMigration !== 0) {
-            const immigrantPerBin = netMigration / MIGRATION_BINS;
+            let remaining = netMigration;
+            const eligible = [];
             for (let i = MIGRATION_AGE_MIN; i < MIGRATION_AGE_MAX; i++) {
-                nextPop[i] = Math.max(0, nextPop[i] + immigrantPerBin);
+                eligible.push(i);
+            }
+
+            while (Math.abs(remaining) > 0.5 && eligible.length > 0) {
+                const perBin = remaining / eligible.length;
+                const nextEligible = [];
+                let applied = 0;
+
+                for (const i of eligible) {
+                    const proposed = nextPop[i] + perBin;
+                    if (proposed < 0) {
+                        // This bin can't absorb full emigration; take what's available
+                        applied -= nextPop[i];
+                        nextPop[i] = 0;
+                    } else {
+                        nextPop[i] = proposed;
+                        applied += perBin;
+                        nextEligible.push(i);
+                    }
+                }
+
+                remaining -= applied;
+
+                // If no progress was made (all bins exhausted), stop
+                if (nextEligible.length === eligible.length || nextEligible.length === 0) break;
+                // Only re-iterate if there was clamping; remaining shortfall goes to survivors
+                eligible.length = 0;
+                eligible.push(...nextEligible);
+            }
+
+            if (Math.abs(remaining) > 0.5 && netMigration < 0) {
+                console.warn(
+                    `Migration: could not fully apply ${netMigration}; shortfall = ${remaining.toFixed(0)} (year ${year})`
+                );
             }
         }
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { MAX_AGE } from '../../data/constants';
 
 /**
@@ -7,6 +7,7 @@ import { MAX_AGE } from '../../data/constants';
  */
 function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
     const [tooltip, setTooltip] = useState(null);
+    const liveRegionRef = useRef(null);
     const isDark = theme === 'dark';
 
     // Aggregate to 5-year age bands
@@ -40,24 +41,43 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
         return `${Math.round(n)}`;
     };
 
-    const handleBarHover = useCallback((band, idx) => {
+    const bandLabel = (startAge) => startAge === MAX_AGE ? '100+' : `${startAge}–${startAge + 4}`;
+
+    const showTooltip = useCallback((band, idx) => {
         const y = getY(idx);
         const w = maxBand > 0 ? (band.total / maxBand) * maxBarW : 0;
-        setTooltip({ x: cx + w + 8, y: y + barH / 2, label: band.startAge === MAX_AGE ? '100+' : `${band.startAge}-${band.startAge + 4}`, value: formatNum(band.total) });
+        const label = bandLabel(band.startAge);
+        const value = formatNum(band.total);
+        setTooltip({ x: cx + w + 8, y: y + barH / 2, label, value });
+        if (liveRegionRef.current) {
+            liveRegionRef.current.textContent = `Age ${label}: ${value}`;
+        }
     }, [maxBand]);
 
-    const handleMouseLeave = useCallback(() => setTooltip(null), []);
+    const hideTooltip = useCallback(() => {
+        setTooltip(null);
+        if (liveRegionRef.current) liveRegionRef.current.textContent = '';
+    }, []);
+
+    const handleBarKey = useCallback((e, band, idx) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            showTooltip(band, idx);
+        }
+    }, [showTooltip]);
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
             <h2 className="text-base font-bold">{t('pyrTitle')}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('pyrSub', { year: currentYear })}</p>
+            {/* Screen-reader live region for tooltip updates */}
+            <span ref={liveRegionRef} aria-live="polite" className="sr-only" />
             <svg
                 viewBox="0 -10 440 315"
                 className="w-full h-auto"
                 role="img"
                 aria-label={t('pyrTitle')}
-                onMouseLeave={handleMouseLeave}
+                onMouseLeave={hideTooltip}
             >
                 <title>{t('pyrTitle')}</title>
                 <desc>{t('pyrSub', { year: currentYear })}</desc>
@@ -69,10 +89,17 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
                     const y = getY(idx);
                     const fill = barFill(startAge);
                     const showLabel = startAge % 10 === 0;
+                    const label = bandLabel(startAge);
                     return (
                         <g
                             key={idx}
-                            onMouseEnter={() => handleBarHover({ startAge, total }, idx)}
+                            role="listitem"
+                            tabIndex={0}
+                            aria-label={`Age ${label}: ${formatNum(total)}`}
+                            onMouseEnter={() => showTooltip({ startAge, total }, idx)}
+                            onFocus={() => showTooltip({ startAge, total }, idx)}
+                            onBlur={hideTooltip}
+                            onKeyDown={(e) => handleBarKey(e, { startAge, total }, idx)}
                             style={{ cursor: 'pointer' }}
                         >
                             <rect x={cx - w} y={y} width={w} height={barH} fill={fill} opacity="0.85" />

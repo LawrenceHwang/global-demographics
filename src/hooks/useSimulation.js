@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SIM_START_YEAR } from '../data/constants';
 import { COUNTRY_CONFIG } from '../data/countries';
 import { MORTALITY_PROFILES } from '../data/mortality';
-import { SIM_START_YEAR } from '../data/constants';
 import { buildCountryPopulation, runSimulation } from '../engine/simulation';
 
 /**
@@ -18,21 +18,27 @@ export function useSimulation(resetPlayback) {
 
     const cfg = COUNTRY_CONFIG[country];
 
+    // Keep a ref to the latest resetPlayback so handleCountryChange is stable
+    const resetRef = useRef(resetPlayback);
+    useEffect(() => { resetRef.current = resetPlayback; }, [resetPlayback]);
+
     const handleCountryChange = useCallback((newCountry) => {
         const newCfg = COUNTRY_CONFIG[newCountry];
         setCountry(newCountry);
         setTfr(newCfg.tfr);
         setMigration(newCfg.migration);
         setIsDynamicTfr(false);
-        if (resetPlayback) resetPlayback();
-    }, [resetPlayback]);
+        resetRef.current?.();
+    }, []);
 
     const basePop = useMemo(
         () => buildCountryPopulation(cfg),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [country]
+        [cfg.youth, cfg.working, cfg.elderly, cfg.anchors]
     );
-    const mortality = MORTALITY_PROFILES[cfg.mortalityProfile];
+    const mortality = useMemo(
+        () => MORTALITY_PROFILES[cfg.mortalityProfile],
+        [cfg.mortalityProfile]
+    );
 
     const { history, popByYear } = useMemo(
         () => runSimulation(basePop, mortality, tfr, migration, isDynamicTfr, terminalTfr, terminalYear),

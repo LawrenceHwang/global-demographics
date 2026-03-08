@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { CHART_W, TRAJ_CHART_H, SIM_START_YEAR, SIM_YEAR_SPAN, DEP_THRESHOLD_HEALTHY, DEP_THRESHOLD_WARNING, DEP_THRESHOLD_SEVERE } from '../../data/constants';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { CHART_W, DEP_THRESHOLD_HEALTHY, DEP_THRESHOLD_SEVERE, DEP_THRESHOLD_WARNING, SIM_START_YEAR, SIM_YEAR_SPAN, TRAJ_CHART_H } from '../../data/constants';
 
 /**
  * Dependency Ratio Trajectory chart (SVG).
@@ -7,6 +7,7 @@ import { CHART_W, TRAJ_CHART_H, SIM_START_YEAR, SIM_YEAR_SPAN, DEP_THRESHOLD_HEA
  */
 function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
     const [tooltip, setTooltip] = useState(null);
+    const liveRegionRef = useRef(null);
 
     const xPos = useCallback((year) => ((year - SIM_START_YEAR) / SIM_YEAR_SPAN) * CHART_W, []);
 
@@ -38,10 +39,33 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
         const entry = history[year - SIM_START_YEAR];
         if (entry) {
             setTooltip({ x: xPos(year), y: (depRatioChartTop - Math.min(depRatioChartTop, entry.depRatio)) * trajScaleY, year, value: entry.depRatio });
+            if (liveRegionRef.current) {
+                liveRegionRef.current.textContent = `${year}: dependency ratio ${entry.depRatio.toFixed(1)}`;
+            }
         }
     }, [history, xPos, depRatioChartTop, trajScaleY]);
 
-    const handleMouseLeave = useCallback(() => setTooltip(null), []);
+    const handleMouseLeave = useCallback(() => {
+        setTooltip(null);
+        if (liveRegionRef.current) liveRegionRef.current.textContent = '';
+    }, []);
+
+    const handleKeyDown = useCallback((e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        setTooltip(prev => {
+            const baseYear = prev?.year ?? currentYear;
+            const nextYear = e.key === 'ArrowRight'
+                ? Math.min(SIM_START_YEAR + SIM_YEAR_SPAN, baseYear + 1)
+                : Math.max(SIM_START_YEAR, baseYear - 1);
+            const entry = history[nextYear - SIM_START_YEAR];
+            if (!entry) return prev;
+            if (liveRegionRef.current) {
+                liveRegionRef.current.textContent = `${nextYear}: dependency ratio ${entry.depRatio.toFixed(1)}`;
+            }
+            return { x: xPos(nextYear), y: (depRatioChartTop - Math.min(depRatioChartTop, entry.depRatio)) * trajScaleY, year: nextYear, value: entry.depRatio };
+        });
+    }, [history, xPos, depRatioChartTop, trajScaleY, currentYear]);
 
     const isDark = theme === 'dark';
     const gridColor = isDark ? '#334155' : '#e2e8f0';
@@ -53,13 +77,16 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
             <h2 className="text-base font-bold">{t('trajTitle')}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">{t('trajSub')}</p>
+            <span ref={liveRegionRef} aria-live="polite" className="sr-only" />
             <svg
                 viewBox="-50 -10 870 470"
                 className="w-full h-auto overflow-visible"
                 role="img"
                 aria-label={t('trajTitle')}
+                tabIndex={0}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
+                onKeyDown={handleKeyDown}
             >
                 <title>{t('trajTitle')}</title>
                 <desc>{t('trajSub')}</desc>

@@ -1,6 +1,6 @@
-import React from 'react';
 import { Pause, Play, RotateCcw } from 'lucide-react';
-import { SIM_START_YEAR, SIM_END_YEAR } from '../data/constants';
+import React from 'react';
+import { SIM_END_YEAR, SIM_START_YEAR } from '../data/constants';
 
 /**
  * Playback controls: year slider, play/pause, and reset.
@@ -22,6 +22,8 @@ function PlaybackControls({ currentYear, isPlaying, togglePlay, reset, seekTo, t
             <div className="flex gap-2">
                 <button
                     onClick={togglePlay}
+                    aria-pressed={isPlaying}
+                    aria-label={isPlaying ? t('pause') : t('play')}
                     className="flex-1 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white py-2.5 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm transition-colors shadow-sm shadow-indigo-200 dark:shadow-none min-h-[44px]"
                 >
                     {isPlaying ? <Pause size={15} /> : <Play size={15} />}
