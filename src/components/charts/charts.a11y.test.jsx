@@ -9,12 +9,19 @@ import PopulationComposition from './PopulationComposition';
 
 const t = (key, params = {}) => {
     const dict = {
-        pyrTitle: 'Population Pyramid',
-        pyrSub: `Age distribution (${params.year ?? ''})`,
+        pyrTitle: 'Total Population by Age (Not Sex-Disaggregated)',
+        pyrSub: `Total population by five-year age group (${params.year ?? ''}); not sex-disaggregated.`,
         trajTitle: 'Dependency Ratio Trajectory',
         trajSub: 'Dependency ratio over time',
         compTitle: 'Population Composition',
         compSub: 'Population by age group',
+        chartDataTableLabel: `Data table for ${params.chart ?? ''}`,
+        downloadCsv: 'Download CSV',
+        year: 'Year',
+        ageGroup: 'Age Group',
+        depRatio: 'Dependency Ratio',
+        totalPop: 'Total Population',
+        depRatioUnavailable: 'No workforce',
         youth: 'Youth',
         working: 'Working',
         elderly: 'Elderly',
@@ -49,6 +56,9 @@ describe('charts accessibility', () => {
 
         const results = await axe(container);
         expect(results.violations, JSON.stringify(results.violations, null, 2)).toHaveLength(0);
+        const svg = container.querySelector('svg[aria-describedby]');
+        expect(svg).toBeTruthy();
+        expect(container.querySelector('table')).toBeTruthy();
     });
 
     it('DependencyTrajectory has no critical axe violations', async () => {
@@ -66,6 +76,9 @@ describe('charts accessibility', () => {
 
         const results = await axe(container);
         expect(results.violations, JSON.stringify(results.violations, null, 2)).toHaveLength(0);
+        const svg = container.querySelector('svg[aria-describedby]');
+        expect(svg).toBeTruthy();
+        expect(container.querySelector('table')).toBeTruthy();
     });
 
     it('PopulationComposition has no critical axe violations', async () => {
@@ -81,5 +94,8 @@ describe('charts accessibility', () => {
 
         const results = await axe(container);
         expect(results.violations, JSON.stringify(results.violations, null, 2)).toHaveLength(0);
+        const svg = container.querySelector('svg[aria-describedby]');
+        expect(svg).toBeTruthy();
+        expect(container.querySelector('table')).toBeTruthy();
     });
 });

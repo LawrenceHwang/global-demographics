@@ -1,7 +1,8 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { CHART_W, SIM_START_YEAR, SIM_YEAR_SPAN } from '../../data/constants';
 import { computeYAxisMax, formatPop, formatYLabel } from '../../utils/format';
 import { clientXToYear } from '../../utils/svgCoordinates';
+import ChartDataFallback from './ChartDataFallback';
 
 /**
  * Population Composition chart (SVG line chart).
@@ -10,6 +11,7 @@ import { clientXToYear } from '../../utils/svgCoordinates';
 function PopulationComposition({ history, currentYear, theme, t }) {
     const [tooltip, setTooltip] = useState(null);
     const liveRegionRef = useRef(null);
+    const tableId = useId();
     const isDark = theme === 'dark';
 
     const xPos = useCallback((year) => ((year - SIM_START_YEAR) / SIM_YEAR_SPAN) * CHART_W, []);
@@ -71,6 +73,11 @@ function PopulationComposition({ history, currentYear, theme, t }) {
         });
     }, [history, xPos, currentYear]);
 
+    const tableRows = useMemo(
+        () => history.map(entry => [entry.year, Math.round(entry.total), Math.round(entry.working), Math.round(entry.elderly), Math.round(entry.youth)]),
+        [history]
+    );
+
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
             <h2 className="text-base font-bold">{t('compTitle')}</h2>
@@ -81,6 +88,7 @@ function PopulationComposition({ history, currentYear, theme, t }) {
                 className="w-full h-auto"
                 role="group"
                 aria-label={t('compTitle')}
+                aria-describedby={tableId}
                 tabIndex={0}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
@@ -139,6 +147,14 @@ function PopulationComposition({ history, currentYear, theme, t }) {
                 <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-purple-500"></span>{t('elderly')}</div>
                 <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500"></span>{t('youth')}</div>
             </div>
+            <ChartDataFallback
+                tableId={tableId}
+                caption={t('chartDataTableLabel', { chart: t('compTitle') })}
+                columns={[t('year'), t('totalPop'), t('working'), t('elderly'), t('youth')]}
+                rows={tableRows}
+                downloadLabel={t('downloadCsv')}
+                fileName="population-composition.csv"
+            />
         </div>
     );
 }

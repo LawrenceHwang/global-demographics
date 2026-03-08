@@ -1,6 +1,8 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { CHART_W, DEP_THRESHOLD_HEALTHY, DEP_THRESHOLD_SEVERE, DEP_THRESHOLD_WARNING, SIM_START_YEAR, SIM_YEAR_SPAN, TRAJ_CHART_H } from '../../data/constants';
+import { formatDepRatio, getNumericDepRatioForCharts } from '../../utils/metrics';
 import { clientXToYear } from '../../utils/svgCoordinates';
+import ChartDataFallback from './ChartDataFallback';
 
 /**
  * Dependency Ratio Trajectory chart (SVG).
@@ -9,13 +11,19 @@ import { clientXToYear } from '../../utils/svgCoordinates';
 function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
     const [tooltip, setTooltip] = useState(null);
     const liveRegionRef = useRef(null);
+    const tableId = useId();
 
     const xPos = useCallback((year) => ((year - SIM_START_YEAR) / SIM_YEAR_SPAN) * CHART_W, []);
 
+    const chartHistory = useMemo(
+        () => history.map(entry => ({ ...entry, chartDepRatio: getNumericDepRatioForCharts(entry.depRatio) })),
+        [history]
+    );
+
     const maxDepRatio = useMemo(() => {
-        if (!history.length) return 80;
-        return Math.max(...history.map(h => h.depRatio));
-    }, [history]);
+        if (!chartHistory.length) return 80;
+        return Math.max(...chartHistory.map(entry => entry.chartDepRatio));
+    }, [chartHistory]);
 
     const depRatioChartTop = useMemo(() => {
         const paddedMax = Math.max(80, maxDepRatio * 1.15);
@@ -36,12 +44,13 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
         const year = clientXToYear(svg, e.clientX, CHART_W, SIM_START_YEAR, SIM_YEAR_SPAN);
         const entry = history[year - SIM_START_YEAR];
         if (entry) {
-            setTooltip({ x: xPos(year), y: (depRatioChartTop - Math.min(depRatioChartTop, entry.depRatio)) * trajScaleY, year, value: entry.depRatio });
+            const chartValue = getNumericDepRatioForCharts(entry.depRatio, depRatioChartTop);
+            setTooltip({ x: xPos(year), y: (depRatioChartTop - Math.min(depRatioChartTop, chartValue)) * trajScaleY, year, value: entry.depRatio });
             if (liveRegionRef.current) {
-                liveRegionRef.current.textContent = `${year}: dependency ratio ${entry.depRatio.toFixed(1)}`;
+                liveRegionRef.current.textContent = `${year}: ${t('depRatio')} ${formatDepRatio(entry.depRatio, t)}`;
             }
         }
-    }, [history, xPos, depRatioChartTop, trajScaleY]);
+    }, [history, xPos, depRatioChartTop, trajScaleY, t]);
 
     const handleMouseLeave = useCallback(() => {
         setTooltip(null);
@@ -58,12 +67,18 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
                 : Math.max(SIM_START_YEAR, baseYear - 1);
             const entry = history[nextYear - SIM_START_YEAR];
             if (!entry) return prev;
+            const chartValue = getNumericDepRatioForCharts(entry.depRatio, depRatioChartTop);
             if (liveRegionRef.current) {
-                liveRegionRef.current.textContent = `${nextYear}: dependency ratio ${entry.depRatio.toFixed(1)}`;
+                liveRegionRef.current.textContent = `${nextYear}: ${t('depRatio')} ${formatDepRatio(entry.depRatio, t)}`;
             }
-            return { x: xPos(nextYear), y: (depRatioChartTop - Math.min(depRatioChartTop, entry.depRatio)) * trajScaleY, year: nextYear, value: entry.depRatio };
+            return { x: xPos(nextYear), y: (depRatioChartTop - Math.min(depRatioChartTop, chartValue)) * trajScaleY, year: nextYear, value: entry.depRatio };
         });
-    }, [history, xPos, depRatioChartTop, trajScaleY, currentYear]);
+    }, [history, xPos, depRatioChartTop, trajScaleY, currentYear, t]);
+
+    const tableRows = useMemo(
+        () => history.map(entry => [entry.year, formatDepRatio(entry.depRatio, t)]),
+        [history, t]
+    );
 
     const isDark = theme === 'dark';
     const gridColor = isDark ? '#334155' : '#e2e8f0';
@@ -81,6 +96,7 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
                 className="w-full h-auto overflow-visible"
                 role="group"
                 aria-label={t('trajTitle')}
+                aria-describedby={tableId}
                 tabIndex={0}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
@@ -109,20 +125,20 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
                 {/* Data path (filled area) */}
                 <path
                     d={[
-                        ...history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(depRatioChartTop - Math.min(depRatioChartTop, h.depRatio)) * trajScaleY}`),
+                        ...chartHistory.map((entry, i) => `${i === 0 ? 'M' : 'L'} ${xPos(entry.year)} ${(depRatioChartTop - Math.min(depRatioChartTop, entry.chartDepRatio)) * trajScaleY}`),
                         `L ${CHART_W} ${TRAJ_CHART_H}`, `L 0 ${TRAJ_CHART_H}`, 'Z'
                     ].join(' ')}
                     fill={fillColor}
                 />
                 {/* Data path (stroke) */}
                 <path
-                    d={history.map((h, i) => `${i === 0 ? 'M' : 'L'} ${xPos(h.year)} ${(depRatioChartTop - Math.min(depRatioChartTop, h.depRatio)) * trajScaleY}`).join(' ')}
+                    d={chartHistory.map((entry, i) => `${i === 0 ? 'M' : 'L'} ${xPos(entry.year)} ${(depRatioChartTop - Math.min(depRatioChartTop, entry.chartDepRatio)) * trajScaleY}`).join(' ')}
                     fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                 />
 
                 {/* Current year indicator */}
                 <line x1={xPos(currentYear)} y1="0" x2={xPos(currentYear)} y2={TRAJ_CHART_H + 10} stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
-                <circle cx={xPos(currentYear)} cy={(depRatioChartTop - Math.min(depRatioChartTop, currentData.depRatio)) * trajScaleY} r="5" fill="#6366f1" stroke={isDark ? '#0f172a' : 'white'} strokeWidth="2.5" />
+                <circle cx={xPos(currentYear)} cy={(depRatioChartTop - Math.min(depRatioChartTop, getNumericDepRatioForCharts(currentData.depRatio, depRatioChartTop))) * trajScaleY} r="5" fill="#6366f1" stroke={isDark ? '#0f172a' : 'white'} strokeWidth="2.5" />
 
                 {/* Tooltip */}
                 {tooltip && (
@@ -130,7 +146,7 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
                         <circle cx={tooltip.x} cy={tooltip.y} r="4" fill="#6366f1" stroke="white" strokeWidth="2" />
                         <rect x={tooltip.x - 40} y={tooltip.y - 32} width="80" height="24" rx="6" fill={isDark ? '#1e293b' : '#fff'} stroke={isDark ? '#475569' : '#e2e8f0'} strokeWidth="1" />
                         <text x={tooltip.x} y={tooltip.y - 16} fontSize="13" fill={labelColor} fontWeight="700" textAnchor="middle">
-                            {tooltip.year}: {tooltip.value.toFixed(1)}
+                            {tooltip.year}: {formatDepRatio(tooltip.value, t)}
                         </text>
                     </g>
                 )}
@@ -140,6 +156,14 @@ function DependencyTrajectory({ history, currentYear, currentData, theme, t }) {
                     <text key={yr} x={xPos(yr)} y={TRAJ_CHART_H + 22} fontSize="20" fill={labelColor} fontWeight="600" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{yr}</text>
                 ))}
             </svg>
+            <ChartDataFallback
+                tableId={tableId}
+                caption={t('chartDataTableLabel', { chart: t('trajTitle') })}
+                columns={[t('year'), t('depRatio')]}
+                rows={tableRows}
+                downloadLabel={t('downloadCsv')}
+                fileName="dependency-trajectory.csv"
+            />
         </div>
     );
 }

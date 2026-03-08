@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_AGE, MIGRATION_AGE_MAX, MIGRATION_AGE_MIN, SIM_END_YEAR, SIM_START_YEAR } from '../data/constants';
 import { COUNTRY_CONFIG } from '../data/countries';
 import { MORTALITY_PROFILES } from '../data/mortality';
+import { formatDepRatio } from '../utils/metrics';
 import { buildCountryPopulation, runSimulation, sanitizeMortality } from './simulation';
 
 describe('buildCountryPopulation', () => {
@@ -97,9 +98,24 @@ describe('runSimulation', () => {
     it('dependency ratio is correctly calculated', () => {
         const { history } = runSimulation(basePop, mortality, cfg.tfr, cfg.migration, false, 0, 0);
         history.forEach(h => {
+            if (h.working === 0) {
+                expect(h.depRatio).toBeNull();
+                return;
+            }
             const expected = ((h.youth + h.elderly) / h.working) * 100;
             expect(h.depRatio).toBeCloseTo(expected, 5);
         });
+    });
+
+    it('uses a null dependency ratio sentinel when there is no workforce', () => {
+        const noWorkers = new Array(MAX_AGE + 1).fill(0);
+        for (let age = 0; age <= 14; age++) noWorkers[age] = 1_000;
+        for (let age = 65; age <= MAX_AGE; age++) noWorkers[age] = 1_000;
+
+        const { history } = runSimulation(noWorkers, new Array(MAX_AGE + 1).fill(0), 0, 0, false, 0, 0);
+        expect(history[0].working).toBe(0);
+        expect(history[0].depRatio).toBeNull();
+        expect(formatDepRatio(history[0].depRatio, key => ({ depRatioUnavailable: 'No workforce' }[key] || key))).toBe('No workforce');
     });
 
     it('dynamic TFR reaches terminal value', () => {

@@ -1,13 +1,15 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react';
 import { MAX_AGE } from '../../data/constants';
+import ChartDataFallback from './ChartDataFallback';
 
 /**
- * Age Distribution chart (horizontal butterfly bar chart).
- * Shows total population by 5-year age bands (not sex-disaggregated).
+ * Age Distribution chart (single-sided horizontal bar chart).
+ * Shows total population by 5-year age bands without implying a sex split.
  */
 function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
     const [tooltip, setTooltip] = useState(null);
     const liveRegionRef = useRef(null);
+    const tableId = useId();
     const isDark = theme === 'dark';
 
     // Aggregate to 5-year age bands
@@ -24,8 +26,8 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
 
     const maxBand = useMemo(() => Math.max(...ageBands.map(b => b.total)), [ageBands]);
 
-    const barH = 13, stride = 14, maxBarW = 175, cx = 235;
-    const LABEL_X = 50;
+    const barH = 13, stride = 14, maxBarW = 240, barX = 90;
+    const LABEL_X = 70;
     const getY = (idx) => (20 - idx) * stride;
     const labelColor = isDark ? '#94a3b8' : '#475569';
 
@@ -48,11 +50,11 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
         const w = maxBand > 0 ? (band.total / maxBand) * maxBarW : 0;
         const label = bandLabel(band.startAge);
         const value = formatNum(band.total);
-        setTooltip({ x: cx + w + 8, y: y + barH / 2, label, value });
+        setTooltip({ x: Math.min(barX + w + 8, 336), y: y + barH / 2, label, value });
         if (liveRegionRef.current) {
-            liveRegionRef.current.textContent = `Age ${label}: ${value}`;
+            liveRegionRef.current.textContent = `${t('pyrTitle')}. Age ${label}: ${value}.`;
         }
-    }, [maxBand]);
+    }, [barX, maxBand, t]);
 
     const hideTooltip = useCallback(() => {
         setTooltip(null);
@@ -66,6 +68,11 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
         }
     }, [showTooltip]);
 
+    const tableRows = useMemo(
+        () => ageBands.map(band => [bandLabel(band.startAge), Math.round(band.total)]),
+        [ageBands]
+    );
+
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-5 transition-colors">
             <h2 className="text-base font-bold">{t('pyrTitle')}</h2>
@@ -77,36 +84,36 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
                 className="w-full h-auto"
                 role="group"
                 aria-label={t('pyrTitle')}
+                aria-describedby={tableId}
                 onMouseLeave={hideTooltip}
             >
                 <title>{t('pyrTitle')}</title>
                 <desc>{t('pyrSub', { year: currentYear })}</desc>
 
-                <line x1={cx} y1={getY(20)} x2={cx} y2={getY(0) + barH} stroke={isDark ? '#334155' : '#e2e8f0'} strokeWidth="1" />
+                <line x1={barX} y1={getY(20)} x2={barX} y2={getY(0) + barH} stroke={isDark ? '#334155' : '#e2e8f0'} strokeWidth="1" />
 
                 {ageBands.map(({ startAge, total }, idx) => {
                     const w = maxBand > 0 ? (total / maxBand) * maxBarW : 0;
                     const y = getY(idx);
                     const fill = barFill(startAge);
-                    const showLabel = startAge % 10 === 0;
+                    const showLabel = startAge % 10 === 0 || startAge === MAX_AGE;
                     const label = bandLabel(startAge);
                     return (
                         <g
                             key={idx}
                             role="button"
                             tabIndex={0}
-                            aria-label={`Age ${label}: ${formatNum(total)}`}
+                            aria-label={`Total population age ${label}: ${formatNum(total)}. ${t('pyrSub', { year: currentYear })}`}
                             onMouseEnter={() => showTooltip({ startAge, total }, idx)}
                             onFocus={() => showTooltip({ startAge, total }, idx)}
                             onBlur={hideTooltip}
                             onKeyDown={(e) => handleBarKey(e, { startAge, total }, idx)}
                             style={{ cursor: 'pointer' }}
                         >
-                            <rect x={cx - w} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
-                            <rect x={cx} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
+                            <rect x={barX} y={y} width={w} height={barH} fill={fill} opacity="0.85" />
                             {showLabel && (
                                 <text x={LABEL_X} y={y + 9} fontSize="12" fill={labelColor} textAnchor="end" fontWeight="600">
-                                    {startAge === MAX_AGE ? '100+' : startAge}
+                                    {label}
                                 </text>
                             )}
                         </g>
@@ -128,6 +135,14 @@ function DemographicPyramid({ currentPopArray, currentYear, theme, t }) {
                 <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-500"></span>{t('working')}</div>
                 <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-purple-500"></span>{t('elderly')}</div>
             </div>
+            <ChartDataFallback
+                tableId={tableId}
+                caption={t('chartDataTableLabel', { chart: t('pyrTitle') })}
+                columns={[t('ageGroup'), t('totalPop')]}
+                rows={tableRows}
+                downloadLabel={t('downloadCsv')}
+                fileName="population-by-age.csv"
+            />
         </div>
     );
 }

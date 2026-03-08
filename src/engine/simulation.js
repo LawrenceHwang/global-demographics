@@ -80,7 +80,7 @@ export function runSimulation(basePop, mortality, tfr, netMigration, isDynamicTf
             else elderly += currentPop[i];
         }
         const total = youth + working + elderly;
-        const depRatio = working > 0 ? ((youth + elderly) / working) * 100 : 0;
+        const depRatio = working > 0 ? ((youth + elderly) / working) * 100 : null;
         const yearRecord = { year, total, youth, working, elderly, depRatio };
         history.push(yearRecord);
         popByYear.push([...currentPop]);
